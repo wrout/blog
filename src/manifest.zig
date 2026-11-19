@@ -1,9 +1,8 @@
-pub const Cache = enum { none, immutable };
-
 pub const File = struct {
     path: []const u8,
     mime: []const u8,
-    cache: Cache,
+    version: []const u8,
+    gzip: bool,
 };
 
 pub const Redirect = struct {
