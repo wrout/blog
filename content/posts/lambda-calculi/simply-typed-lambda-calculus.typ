@@ -1,11 +1,15 @@
 #import "@preview/curryst:0.6.0": rule, prooftree, rule-set
 
-#set document(
-  title: [simply typed $lambda$-calculus],
+#metadata((
+  title: "simply typed λ-calculus",
   description: "hilbert-style formal system for the simply typed lambda calculus",
   keywords: ("plt", "logic"),
-)
-#metadata((published: "2026-11-03", updated: none)) <post>
+  published: "2026-11-03",
+  updated: none,
+)) <meta>
+#show math.equation.where(block: true): it => html.elem("div", attrs: (class: "equation"), it)
+
+#title[simply typed $lambda$-calculus]
 
 = alphabet
 $

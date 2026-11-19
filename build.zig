@@ -121,7 +121,7 @@ fn typeset(b: *std.Build, typst: std.Build.LazyPath, packages: std.Build.LazyPat
     addTypstPaths(b, eval_run, packages);
     eval_run.addArg("--in");
     eval_run.addFileArg2(source, .{ .make_absolute = true });
-    eval_run.addArg("query(<post>).first().value");
+    eval_run.addArg("query(<meta>).first().value");
     // eval dumps json we need to capture
     const meta = eval_run.captureStdOut(.{});
     return .{

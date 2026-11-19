@@ -1,11 +1,15 @@
 #import "@preview/curryst:0.6.0": rule, prooftree, rule-set
 
-#set document(
-  title: [polymorphic $lambda$-calculus],
+#metadata((
+  title: "polymorphic λ-calculus",
   description: "hilbert-style formal system for the polymorphic lambda calculus",
   keywords: ("plt", "logic"),
-)
-#metadata((published: "2026-11-06", updated: none)) <post>
+  published: "2026-11-06",
+  updated: none,
+)) <meta>
+#show math.equation.where(block: true): it => html.elem("div", attrs: (class: "equation"), it)
+
+#title[polymorphic $lambda$-calculus]
 
 = alphabet
 $

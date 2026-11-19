@@ -1,17 +1,20 @@
-{% macro asset(path) -%}
-{%- set file = assets|selectattr("path", "eq", path)|first -%}
+{% macro asset(path) %}
+{% set file = assets|selectattr("path", "eq", path)|first %}
 /static/{{ path|urlencode }}{% if file %}?v={{ file.version }}{% endif %}
-{%- endmacro %}
+{% endmacro %}
 
-{% macro tree(node, current) -%}
+{% macro tree(node, current) %}
 <ul>
-{%- for post in node.posts|sort(attribute="metadata.published")|reverse %}
-<li><a href="/posts/{{ post.stem|urlencode }}"{% if post.stem == current %} aria-current="page"{% endif %}>{{ post.document.title }}</a></li>
-{%- endfor %}
-{%- for dir in node.dirs|sort(attribute="name") %}
-<li><span class="dir">{{ dir.name }}/</span>
-{{ tree(dir, current) }}
-</li>
-{%- endfor %}
+  {% for post in node.posts|sort(attribute="metadata.published")|reverse %}
+  <li>
+    <a href="/posts/{{ post.stem|urlencode }}"{% if post.stem == current %} aria-current="page"{% endif %}>{{ post.metadata.title }}</a>
+  </li>
+  {% endfor %}
+  {% for dir in node.dirs|sort(attribute="name") %}
+  <li>
+    <span class="dir">{{ dir.name }}/</span>
+    {{ tree(dir, current) }}
+  </li>
+  {% endfor %}
 </ul>
-{%- endmacro %}
+{% endmacro %}

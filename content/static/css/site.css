@@ -1,9 +1,26 @@
-@font-face { font-family: "Inconsolata"; font-weight: 400; font-display: swap; src: url("/static/fonts/inconsolata/Latin-Inconsolata-Regular-400.woff2") format("woff2"); }
-@font-face { font-family: "Inconsolata"; font-weight: 700; font-display: swap; src: url("/static/fonts/inconsolata/Latin-Inconsolata-Bold-700.woff2") format("woff2"); }
-@font-face { font-family: "New Computer Modern Math"; font-display: swap; src: url("/static/fonts/newcm/NewCMMath-Book.woff2") format("woff2"); }
+@font-face {
+  font-family: "Inconsolata";
+  font-weight: 400;
+  font-display: swap;
+  src: url("/static/fonts/inconsolata/Latin-Inconsolata-Regular-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Inconsolata";
+  font-weight: 700;
+  font-display: swap;
+  src: url("/static/fonts/inconsolata/Latin-Inconsolata-Bold-700.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "New Computer Modern Math";
+  font-display: swap;
+  src: url("/static/fonts/newcm/NewCMMath-Book.woff2") format("woff2");
+}
 
 :root {
   color-scheme: light dark;
+
   --ink: light-dark(#1e2220, #e3dccb);
   --muted: light-dark(#6f7370, #8a8474);
   --paper: light-dark(#e8e2d2, #18191c);
@@ -12,6 +29,7 @@
   --accent: light-dark(#b4503c, #d4735a);
   --code: light-dark(#d5cebc, #16171a);
   --grain: 0.2;
+
   font: 1rem/1.6 "Inconsolata", monospace;
   color: var(--ink);
   background: var(--paper);
@@ -20,14 +38,33 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root { --grain: 0.12; }
+  :root {
+    --grain: 0.12;
+  }
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-a { color: var(--accent); font-weight: 700; text-decoration: none; }
-:where(.sidebar) a { color: var(--ink); font-weight: 400; }
-a:is(:hover, :focus-visible) { background: var(--accent); color: var(--panel); outline: none; }
+a {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+:where(.sidebar) a {
+  color: var(--ink);
+  font-weight: 400;
+}
+
+a:is(:hover, :focus-visible) {
+  background: var(--accent);
+  color: var(--panel);
+  outline: none;
+}
 
 body {
   display: grid;
@@ -52,18 +89,58 @@ body::after {
   border-right: 3px solid var(--edge);
   background: var(--panel);
 }
-.sidebar header { margin-bottom: 1.5rem; }
-.sidebar p, .dir { color: var(--muted); }
-.sidebar p { font-size: 0.85rem; }
-.sidebar ul { list-style: none; }
-.sidebar ul ul { padding-left: 1.25rem; }
-.sidebar li { padding-block: 0.15rem; }
-.site { font-size: 1.4rem; }
-.sidebar [aria-current="page"] { font-weight: 700; scroll-initial-target: nearest; }
-.sidebar [aria-current="page"]::before { content: "> " / ""; color: var(--accent); }
 
-.pane { position: relative; isolation: isolate; overflow: hidden; }
-.scroll { height: 100%; overflow-y: auto; padding: clamp(1rem, 4vw, 3rem); }
+.sidebar header {
+  margin-bottom: 1.5rem;
+}
+
+.sidebar p,
+.dir {
+  color: var(--muted);
+}
+
+.sidebar p {
+  font-size: 0.85rem;
+}
+
+.sidebar ul {
+  list-style: none;
+}
+
+.sidebar ul ul {
+  padding-left: 1.25rem;
+}
+
+.sidebar li {
+  padding-block: 0.15rem;
+}
+
+.site {
+  font-size: 1.4rem;
+}
+
+.sidebar [aria-current="page"] {
+  font-weight: 700;
+  scroll-initial-target: nearest;
+}
+
+.sidebar [aria-current="page"]::before {
+  content: "> " / "";
+  color: var(--accent);
+}
+
+.pane {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.scroll {
+  height: 100%;
+  overflow-y: auto;
+  padding: clamp(1rem, 4vw, 3rem);
+}
+
 .wall {
   position: absolute;
   inset: -2rem;
@@ -75,7 +152,13 @@ body::after {
   opacity: 0.35;
   pointer-events: none;
 }
-.wall img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; }
+
+.wall img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
 
 .panel {
   max-width: 80ch;
@@ -84,53 +167,229 @@ body::after {
   border: 3px solid var(--edge);
   background: var(--panel);
 }
-.kids { display: block; width: 100%; height: auto; }
 
-h1 { font-size: clamp(1.9rem, 5vw, 2.6rem); line-height: 1.1; letter-spacing: -0.03em; }
-article > header { margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 3px solid var(--edge); }
-.meta { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.7rem; list-style: none; color: var(--muted); font-size: 0.85rem; }
+.kids {
+  display: block;
+  width: 100%;
+  height: auto;
+}
 
-.prose { font-size: 1.15rem; line-height: 1.75; }
-.prose > * + * { margin-top: 1.15rem; }
-.prose :is(h2, h3, h4, h5, h6) { margin-top: 2rem; line-height: 1.2; }
-.prose :is(h2, h3, h4, h5, h6)::before { color: var(--muted); }
-.prose h2 { font-size: 1.9rem; }
-.prose h3 { font-size: 1.5rem; }
-.prose h4 { font-size: 1.2rem; }
-.prose :is(h5, h6) { font-size: 1.05rem; }
-.prose h2::before { content: "# " / ""; }
-.prose h3::before { content: "## " / ""; }
-.prose h4::before { content: "### " / ""; }
-.prose h5::before { content: "#### " / ""; }
-.prose h6::before { content: "##### " / ""; }
-.prose :is(ul, ol) { padding-left: 1.4rem; }
-.prose li + li { margin-top: 0.4rem; }
-.prose pre { padding: 1rem; overflow-x: auto; background: var(--code); font-size: 0.88rem; line-height: 1.6; }
-.prose :not(pre) > code { padding: 0.1em 0.35em; background: var(--code); font-size: 0.92em; }
-.prose blockquote { padding: 0.5rem 1rem; border-left: 5px solid var(--accent); background: var(--code); }
-.prose table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-.prose :is(th, td) { padding: 0.5rem 0.75rem; border: 2px solid var(--edge); text-align: left; }
-.prose th { background: var(--code); }
-.prose figure { text-align: center; }
-.prose figcaption { margin-top: 0.5rem; color: var(--muted); font-size: 0.85rem; }
-.prose :is(img, svg) { max-width: 100%; height: auto; }
-.prose svg { display: block; margin-inline: auto; font-size: 1.15em; }
-.prose svg [fill="#000000"] { fill: currentColor; }
-.prose svg [stroke="#000000"] { stroke: currentColor; }
-.prose math { font-family: "New Computer Modern Math", math; }
-.prose .equation { overflow-x: auto; overflow-y: hidden; padding-block: 0.25em; }
-.prose .equation > math { min-width: max-content; }
-.prose sup { font-size: 0.75em; line-height: 0; vertical-align: super; }
-:where(.prose [role="doc-biblioref"]) { color: var(--accent); font-weight: 700; }
-.prose [role="doc-backlink"] { margin-right: 0.45rem; }
-.prose :is([role="doc-endnotes"], [role="doc-bibliography"]) { margin-top: 2.5rem; padding-top: 1rem; border-top: 3px solid var(--edge); font-size: 0.88rem; }
-.prose :is([role="doc-endnotes"] ol, [role="doc-bibliography"] ul) { padding-left: 0; }
-.prose [role="doc-bibliography"].hanging-indent li { padding-left: 1.6rem; text-indent: -1.6rem; }
-.prose [role="doc-bibliography"] .light { color: var(--muted); }
-.prose [role="doc-bibliography"] .indent { padding-left: 1.6rem; }
-.prose :target { scroll-margin-top: 1.5rem; background: var(--code); }
+h1 {
+  font-size: clamp(1.9rem, 5vw, 2.6rem);
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.7rem;
+  list-style: none;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.prose {
+  font-size: 1.15rem;
+  line-height: 1.75;
+}
+
+.prose > * + * {
+  margin-top: 1.15rem;
+}
+
+.prose > h1 {
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 3px solid var(--edge);
+}
+
+.prose :is(h2, h3, h4, h5, h6) {
+  margin-top: 2rem;
+  line-height: 1.2;
+}
+
+.prose :is(h2, h3, h4, h5, h6)::before {
+  color: var(--muted);
+}
+
+.prose h2 {
+  font-size: 1.9rem;
+}
+
+.prose h3 {
+  font-size: 1.5rem;
+}
+
+.prose h4 {
+  font-size: 1.2rem;
+}
+
+.prose :is(h5, h6) {
+  font-size: 1.05rem;
+}
+
+.prose h2::before {
+  content: "# " / "";
+}
+
+.prose h3::before {
+  content: "## " / "";
+}
+
+.prose h4::before {
+  content: "### " / "";
+}
+
+.prose h5::before {
+  content: "#### " / "";
+}
+
+.prose h6::before {
+  content: "##### " / "";
+}
+
+.prose :is(ul, ol) {
+  padding-left: 1.4rem;
+}
+
+.prose li + li {
+  margin-top: 0.4rem;
+}
+
+.prose pre {
+  padding: 1rem;
+  overflow-x: auto;
+  background: var(--code);
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.prose :not(pre) > code {
+  padding: 0.1em 0.35em;
+  background: var(--code);
+  font-size: 0.92em;
+}
+
+.prose blockquote {
+  padding: 0.5rem 1rem;
+  border-left: 5px solid var(--accent);
+  background: var(--code);
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.prose :is(th, td) {
+  padding: 0.5rem 0.75rem;
+  border: 2px solid var(--edge);
+  text-align: left;
+}
+
+.prose th {
+  background: var(--code);
+}
+
+.prose figure {
+  text-align: center;
+}
+
+.prose figcaption {
+  margin-top: 0.5rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.prose :is(img, svg) {
+  max-width: 100%;
+  height: auto;
+}
+
+.prose svg {
+  display: block;
+  margin-inline: auto;
+  font-size: 1.15em;
+}
+
+.prose svg [fill="#000000"] {
+  fill: currentColor;
+}
+
+.prose svg [stroke="#000000"] {
+  stroke: currentColor;
+}
+
+.prose math {
+  font-family: "New Computer Modern Math", math;
+}
+
+.prose .equation {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-block: 0.25em;
+}
+
+.prose .equation > math {
+  min-width: max-content;
+}
+
+.prose sup {
+  font-size: 0.75em;
+  line-height: 0;
+  vertical-align: super;
+}
+
+:where(.prose [role="doc-biblioref"]) {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.prose [role="doc-backlink"] {
+  margin-right: 0.45rem;
+}
+
+.prose :is([role="doc-endnotes"], [role="doc-bibliography"]) {
+  margin-top: 2.5rem;
+  padding-top: 1rem;
+  border-top: 3px solid var(--edge);
+  font-size: 0.88rem;
+}
+
+.prose :is([role="doc-endnotes"] ol, [role="doc-bibliography"] ul) {
+  padding-left: 0;
+}
+
+.prose [role="doc-bibliography"].hanging-indent li {
+  padding-left: 1.6rem;
+  text-indent: -1.6rem;
+}
+
+.prose [role="doc-bibliography"] .light {
+  color: var(--muted);
+}
+
+.prose [role="doc-bibliography"] .indent {
+  padding-left: 1.6rem;
+}
+
+.prose :target {
+  scroll-margin-top: 1.5rem;
+  background: var(--code);
+}
 
 @media (max-width: 48rem) {
-  body { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
-  .sidebar { max-height: 35dvh; border-right: none; border-bottom: 3px solid var(--edge); }
+  body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .sidebar {
+    max-height: 35dvh;
+    border-right: none;
+    border-bottom: 3px solid var(--edge);
+  }
 }
