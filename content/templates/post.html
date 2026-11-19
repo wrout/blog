@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% set current = post.stem %}
+{% block title %}{{ post.document.title }} · grotto road{% endblock %}
+{% block description %}{{ post.document.description or "blog post" }}{% endblock %}
+{% block content %}
+<article class="panel">
+<header>
+<h1>{{ post.document.title }}</h1>
+<ul class="meta">
+<li><time datetime="{{ post.metadata.published }}">{{ post.metadata.published }}</time></li>
+{%- if post.metadata.updated %}
+<li>updated <time datetime="{{ post.metadata.updated }}">{{ post.metadata.updated }}</time></li>
+{%- endif %}
+{%- for keyword in post.document.keywords %}
+<li>{{ keyword|lower }}</li>
+{%- endfor %}
+<li><a href="/posts/{{ post.source|urlencode }}">source</a></li>
+</ul>
+</header>
+<div class="prose">{{ post.styles|safe }}{{ post.body|safe }}</div>
+</article>
+{% endblock %}

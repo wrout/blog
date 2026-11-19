@@ -14,6 +14,7 @@ pub fn build(b: *std.Build) void {
     // copy every post into one staging tree, whose dirname is hash of all file contents
     // - changing a post changes dirname... which refreshes gen...
     _ = inputs.addCopyDirectory(b.path("content/static"), "static", .{});
+    _ = inputs.addCopyDirectory(b.path("content/templates"), "templates", .{});
     for (postPaths(b)) |path| {
         const post = typeset(b, typst, path);
         const staged = b.pathJoin(&.{ "posts", path });

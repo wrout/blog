@@ -1,0 +1,33 @@
+{%- import "macros.html" as m -%}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>{% block title %}grotto road{% endblock %}</title>
+<meta name="description" content="{% block description %}my writing{% endblock %}">
+<link rel="icon" href="{{ m.asset("images/favicon.ico") }}">
+<link rel="preload" href="/static/fonts/inconsolata/Latin-Inconsolata-Regular-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="{{ m.asset("css/site.css") }}">
+</head>
+<body>
+<nav class="sidebar" aria-label="site">
+<header>
+<a class="site" href="/">grotto road</a>
+<p>my writing</p>
+</header>
+{{ m.tree(tree, current|default(none)) }}
+</nav>
+<main class="pane">
+<div class="scroll">
+{% block content %}{% endblock %}
+</div>
+<div class="wall" aria-hidden="true">
+{%- for cover in assets|selectattr("path", "startingwith", "images/covers/160/")|sort(attribute="version") -%}
+<img src="{{ m.asset(cover.path) }}" alt="" loading="lazy" decoding="async">
+{%- endfor -%}
+</div>
+</main>
+</body>
+</html>
