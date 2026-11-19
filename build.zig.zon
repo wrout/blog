@@ -14,6 +14,16 @@
             .hash = "N-V-__8AAGkV5wLNwbmD6ccowaMX7ddjkuvg-Slb1YQmX-ZZ",
             .lazy = true,
         },
+        .minijinja_x86_64 = .{
+            .url = "https://github.com/mitsuhiko/minijinja/releases/download/3.1.0/minijinja-cli-x86_64-unknown-linux-musl.tar.xz",
+            .hash = "N-V-__8AAAWPQQCOqgOAsDUR1QVzUTDpBZs2sRByzjigAdju",
+            .lazy = true,
+        },
+        .minijinja_aarch64 = .{
+            .url = "https://github.com/mitsuhiko/minijinja/releases/download/3.1.0/minijinja-cli-aarch64-unknown-linux-musl.tar.xz",
+            .hash = "N-V-__8AAHXkOAAKDVIr9fQEUhi78roj96drz3YCIOy4fgqD",
+            .lazy = true,
+        },
     },
     .paths = .{
         "build.zig",
