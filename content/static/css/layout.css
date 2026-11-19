@@ -1,0 +1,201 @@
+body {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  isolation: isolate;
+}
+
+.wall {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: clip;
+  container-type: inline-size;
+  pointer-events: none;
+}
+
+.tiles {
+  --cols: 5;
+  --rows: round(down, var(--covers) / var(--cols), 1);
+  --tile: calc(100cqw / var(--cols));
+  --height: calc(var(--tile) * var(--rows));
+
+  position: sticky;
+  top: calc(100vh - var(--height));
+
+  height: var(--height);
+  display: grid;
+  grid-template-columns: repeat(var(--cols), 1fr);
+  grid-auto-rows: var(--tile);
+  align-content: start;
+  overflow: clip;
+}
+
+@media (min-width: 700px) {
+  .tiles {
+    --cols: 9;
+  }
+}
+
+@media (min-width: 1200px) {
+  .tiles {
+    --cols: 10;
+  }
+}
+
+@media (min-width: 1500px) {
+  .tiles {
+    --cols: 15;
+  }
+}
+
+.cell {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* decorative overlays stretched across their host */
+body::after,
+.wall::after,
+.tiles::after,
+.panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+body::after {
+  z-index: 2;
+  opacity: var(--grain);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+}
+
+.wall::after {
+  background-color: var(--scrim);
+}
+
+/* ben day dots */
+.tiles::after,
+.panel::after {
+  --dot: radial-gradient(circle at center, var(--artifact) 0.85px, transparent 0.95px);
+  background-image: var(--dot), var(--dot);
+  background-size: 5px 5px;
+  background-position: 0 0, 2.5px 2.5px;
+}
+
+.tiles::after {
+  opacity: var(--halftone-wall);
+}
+
+.panel::after {
+  opacity: var(--halftone);
+}
+
+main {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: clamp(1rem, 5vh, 4rem) 1rem;
+}
+
+.panel {
+  position: relative;
+  width: min(86ch, 100%);
+  align-self: start;
+  border: 3px solid var(--edge);
+  box-shadow: var(--shadow);
+  background-color: var(--panel);
+}
+
+.panel::before {
+  content: "";
+  display: block;
+  height: 14px;
+  border-bottom: 3px solid var(--edge);
+  background: linear-gradient(
+    90deg,
+    var(--rust) 0 20%,
+    var(--coral) 20% 40%,
+    var(--ochre) 40% 60%,
+    var(--moss) 60% 80%,
+    var(--forest) 80% 100%
+  );
+}
+
+.titlebar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.8rem;
+  border-bottom: 3px solid var(--edge);
+  background-color: var(--titlebar);
+  color: var(--titlebar-ink);
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+.shelf {
+  flex: none;
+  width: 34px;
+  height: 12px;
+  margin-left: auto;
+  border: 2px solid var(--titlebar-ink);
+  background: repeating-linear-gradient(
+    90deg,
+    var(--titlebar-ink) 0 2px,
+    transparent 2px 5px
+  );
+  cursor: pointer;
+}
+
+.shelf:has(:focus-visible) {
+  outline: 2px solid var(--titlebar-ink);
+  outline-offset: 2px;
+}
+
+.shelf:has(:checked) {
+  background: var(--titlebar-ink);
+}
+
+/* le shelf... panel collapses to titlebar, wall joins flow */
+body:has(.shelf :checked) main {
+  position: absolute;
+  inset: 0 0 auto;
+}
+
+body:has(.shelf :checked) .panel-body {
+  display: none;
+}
+
+body:has(.shelf :checked) .wall {
+  position: relative;
+}
+
+.location {
+  --link-ink: var(--titlebar-ink);
+  --link-hover-back: var(--titlebar-ink);
+  --link-hover-ink: var(--titlebar);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.panel-body {
+  padding: clamp(1.25rem, 4vw, 2.5rem);
+}
+
+@media (max-width: 480px) {
+  main {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .panel {
+    --shadow: 4px 4px 0 var(--edge);
+  }
+}

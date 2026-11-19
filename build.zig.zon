@@ -1,0 +1,25 @@
+.{
+    .name = .blog,
+    .version = "0.1.0",
+    .fingerprint = 0xc01551439ed74b5f,
+    .minimum_zig_version = "0.18.0-dev.1186+9dd2c8c88",
+    .dependencies = .{
+        .typst_x86_64 = .{
+            .url = "https://github.com/typst/typst/releases/download/v0.15.1/typst-x86_64-unknown-linux-musl.tar.xz",
+            .hash = "N-V-__8AAIkrUwMLx7tNqnn6A1EUWdFq4A3IduQbiAg2fIuV",
+            .lazy = true,
+        },
+        .typst_aarch64 = .{
+            .url = "https://github.com/typst/typst/releases/download/v0.15.1/typst-aarch64-unknown-linux-musl.tar.xz",
+            .hash = "N-V-__8AAGkV5wLNwbmD6ccowaMX7ddjkuvg-Slb1YQmX-ZZ",
+            .lazy = true,
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+        "content",
+        "zig-pkg",
+    },
+}
