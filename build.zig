@@ -39,23 +39,17 @@ pub fn build(b: *std.Build) void {
     gen_run.addDirectoryArg(inputs.getDirectory());
     const site = gen_run.addOutputDirectoryArg("site");
 
-    const public_cmd = b.step("public", "install generated site");
+    const gen_cmd = b.step("gen", "generate site");
+    gen_cmd.dependOn(&gen_run.step);
+
     const public_install = b.addInstallDirectory(.{
         .source_dir = site.path(b, "public"),
         .install_dir = .prefix,
         .install_subdir = "public",
     });
+    const public_cmd = b.step("public", "install generated site");
+    public_cmd.dependOn(gen_cmd);
     public_cmd.dependOn(&public_install.step);
-
-    const embed = b.addWriteFiles();
-    _ = embed.addCopyDirectory(site, "", .{});
-    const embed_root = embed.addCopyFile(b.path("src/serve/site.zig"), "site.zig");
-    const embedded = b.createModule(.{
-        .root_source_file = embed_root,
-        .imports = &.{
-            .{ .name = "manifest", .module = manifest },
-        },
-    });
 
     const serve = b.addExecutable(.{
         .name = "blog",
@@ -63,16 +57,11 @@ pub fn build(b: *std.Build) void {
             .root_source_file = b.path("src/serve/main.zig"),
             .target = target,
             .optimize = optimize,
-            .imports = &.{
-                // embedded should match target,optimize? idk
-                .{ .name = "site", .module = embedded },
-            },
         }),
     });
-    b.installArtifact(serve);
-
-    const serve_cmd = b.step("run", "run server");
     const serve_run = b.addRunArtifact(serve);
+    serve_run.step.dependOn(public_cmd);
+    const serve_cmd = b.step("serve", "run server");
     serve_cmd.dependOn(&serve_run.step);
 }
 
@@ -94,15 +83,16 @@ fn typeset(b: *std.Build, typst: std.Build.LazyPath, path: []const u8) Typeset {
     _ = compile_run.addDepFileOutputArg("deps.d");
     compile_run.addFileArg2(source, .{ .make_absolute = true });
     const page = compile_run.addOutputFileArg("page.html");
-    // query step
-    const query_run = std.Build.Step.Run.create(b, b.fmt("typst query {s}", .{path}));
-    query_run.addFileArg(typst);
-    query_run.addArgs(&.{ "query", "--features", "html", "--target", "html", "--ignore-system-fonts" });
-    addTypstPaths(b, query_run);
-    query_run.addFileArg2(source, .{ .make_absolute = true });
-    query_run.addArgs(&.{ "<post>", "--field", "value", "--one" });
-    // query dumps json we need to capture
-    const meta = query_run.captureStdOut(.{});
+    // eval step
+    const eval_run = std.Build.Step.Run.create(b, b.fmt("typst eval {s}", .{path}));
+    eval_run.addFileArg(typst);
+    eval_run.addArgs(&.{ "eval", "--features", "html", "--target", "html", "--ignore-system-fonts" });
+    addTypstPaths(b, eval_run);
+    eval_run.addArg("--in");
+    eval_run.addFileArg2(source, .{ .make_absolute = true });
+    eval_run.addArg("query(<post>).first().value");
+    // eval dumps json we need to capture
+    const meta = eval_run.captureStdOut(.{});
     return .{
         .source = source,
         .page = page,
