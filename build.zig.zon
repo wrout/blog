@@ -24,6 +24,10 @@
             .hash = "N-V-__8AAHXkOAAKDVIr9fQEUhi78roj96drz3YCIOy4fgqD",
             .lazy = true,
         },
+        .curryst = .{
+            .url = "https://github.com/pauladam94/curryst/archive/refs/tags/v0.6.tar.gz",
+            .hash = "N-V-__8AAIJMHQCKDtAFhOsyR8ZA1lHXVe_sOblZQJ5qqUtR",
+        },
     },
     .paths = .{
         "build.zig",

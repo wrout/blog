@@ -10,13 +10,19 @@ pub fn build(b: *std.Build) void {
     // for post changes
     b.graph.poisonCache();
 
+    const curryst = b.dependency("curryst", .{});
+    const packages = b.addWriteFiles();
+    // typst resolves @preview/curryst:0.6.0 under <package-path>/preview/curryst/0.6.0
+    _ = packages.addCopyDirectory(curryst.path(""), "preview/curryst/0.6.0", .{});
+    const package_path = packages.getDirectory();
+
     const inputs = b.addWriteFiles();
     // copy every post into one staging tree, whose dirname is hash of all file contents
     // - changing a post changes dirname... which refreshes gen...
     _ = inputs.addCopyDirectory(b.path("content/static"), "static", .{});
     _ = inputs.addCopyDirectory(b.path("content/templates"), "templates", .{});
     for (postPaths(b)) |path| {
-        const post = typeset(b, typst, path);
+        const post = typeset(b, typst, package_path, path);
         const staged = b.pathJoin(&.{ "posts", path });
         _ = inputs.addCopyFile(post.source, b.pathJoin(&.{ staged, "source.typ" }));
         _ = inputs.addCopyFile(post.page, b.pathJoin(&.{ staged, "page.html" }));
@@ -96,14 +102,14 @@ const Typeset = struct {
     meta: std.Build.LazyPath,
 };
 
-fn typeset(b: *std.Build, typst: std.Build.LazyPath, path: []const u8) Typeset {
+fn typeset(b: *std.Build, typst: std.Build.LazyPath, packages: std.Build.LazyPath, path: []const u8) Typeset {
     const source = b.path(b.pathJoin(&.{ "content", "posts", path }));
     // compile step
     const compile_run = std.Build.Step.Run.create(b, b.fmt("typst compile {s}", .{path}));
     // typst binary is hashed, bumping version necessitates post rebuild
     compile_run.addFileArg(typst);
     compile_run.addArgs(&.{ "compile", "--features", "html", "--format", "html", "--ignore-system-fonts" });
-    addTypstPaths(b, compile_run);
+    addTypstPaths(b, compile_run, packages);
     compile_run.addArgs(&.{ "--deps-format", "make", "--deps" });
     _ = compile_run.addDepFileOutputArg("deps.d");
     compile_run.addFileArg2(source, .{ .make_absolute = true });
@@ -112,7 +118,7 @@ fn typeset(b: *std.Build, typst: std.Build.LazyPath, path: []const u8) Typeset {
     const eval_run = std.Build.Step.Run.create(b, b.fmt("typst eval {s}", .{path}));
     eval_run.addFileArg(typst);
     eval_run.addArgs(&.{ "eval", "--features", "html", "--target", "html", "--ignore-system-fonts" });
-    addTypstPaths(b, eval_run);
+    addTypstPaths(b, eval_run, packages);
     eval_run.addArg("--in");
     eval_run.addFileArg2(source, .{ .make_absolute = true });
     eval_run.addArg("query(<post>).first().value");
@@ -125,12 +131,12 @@ fn typeset(b: *std.Build, typst: std.Build.LazyPath, path: []const u8) Typeset {
     };
 }
 
-fn addTypstPaths(b: *std.Build, run: *std.Build.Step.Run) void {
+fn addTypstPaths(b: *std.Build, run: *std.Build.Step.Run, packages: std.Build.LazyPath) void {
     // posts can reference anything under content/
     run.addArg("--root");
     run.addDirectoryArg(b.path("content"));
     run.addArg("--package-path");
-    run.addDirectoryArg(b.path("zig-pkg/typst"));
+    run.addDirectoryArg(packages);
 }
 
 fn postPaths(b: *std.Build) []const []const u8 {

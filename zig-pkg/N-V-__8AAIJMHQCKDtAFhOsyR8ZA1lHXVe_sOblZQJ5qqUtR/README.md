@@ -13,7 +13,7 @@ You can import the latest version of this package with:
 
 ## Basic usage
 
-To display a proof tree, you first need to create a tree, using the `rule` function. Its last argument is the conclusion, and the other positional arguments are the premises. It also accepts a `name` for the rule name, displayed on the right of the bar, as well as a `label`, displayed on the left of the bar.
+To display a proof tree, you first need to create a tree, using the `rule` function. Its first argument is the conclusion, and the other positional arguments are the premises. It also accepts a `name` for the rule name, displayed on the right of the bar, as well as a `label`, displayed on the left of the bar.
 
 ```typ
 #let tree = rule(
@@ -170,7 +170,7 @@ Here we show a way to typeset multiple rules at one time :
   #let application = prooftree(rule(
     name: [Application],
     $Gamma tack P : A => B$,
-    $Delta tack Q : A$,
+    $Delta tack Q : B$,
     $Gamma, Delta tack P Q : B$,
   ))
 
@@ -207,11 +207,9 @@ Here we show a way to typeset multiple rules at one time :
 The function `rule-set` is very simple and is implemented this way :
 
 ```typ
-#let rule-set(column-gutter: 3em, row-gutter: 3em, ..rules) = {
-  set par(leading: row-gutter, spacing: row-gutter)
-  for rules in rules.pos().split(linebreak()) {
-    block(rules.map(box).join(h(column-gutter, weak: true)))
-  }
+#let rule-set(column-gutter: 3em, row-gutter: 2em, ..rules) = {
+  set par(leading: row-gutter)
+  block(rules.pos().map(box).join(h(column-gutter, weak: true)))
 }
 ```
 
