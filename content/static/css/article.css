@@ -158,14 +158,10 @@
   font-family: 'New Computer Modern Math', math;
 }
 
-.prose div:has(> math[display="block"]) {
+.prose math[display="block"] {
   overflow-x: auto;
   overflow-y: hidden;
   padding-block: 0.25em;
-}
-
-.prose div > math[display="block"] {
-  min-width: max-content;
 }
 
 .prose sup {
