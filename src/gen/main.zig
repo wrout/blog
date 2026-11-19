@@ -41,16 +41,46 @@ const Meta = struct {
 };
 
 const Head = struct {
+    html: []const u8,
     title: []const u8,
     description: ?[]const u8,
     keywords: ?[]const u8,
 
     fn parse(html: []const u8) !Head {
+        const head = between(html, "<head>", "</head>") orelse return error.Headless;
         return .{
-            .title = between(html, "<title>", "</title>") orelse return error.Untitled,
-            .description = between(html, "<meta name=\"description\" content=\"", "\">"),
-            .keywords = between(html, "<meta name=\"keywords\" content=\"", "\">"),
+            .html = head,
+            .title = between(head, "<title>", "</title>") orelse return error.Untitled,
+            .description = between(head, "<meta name=\"description\" content=\"", "\">"),
+            .keywords = between(head, "<meta name=\"keywords\" content=\"", "\">"),
         };
+    }
+
+    fn append(head: Head, gpa: std.mem.Allocator, page: *std.ArrayList(u8)) !void {
+        const style_open = "<style>";
+        const style_close = "</style>";
+        var rest = head.html;
+        while (std.mem.indexOf(u8, rest, style_open)) |start| {
+            const close = std.mem.indexOfPos(u8, rest, start, style_close) orelse return error.UnclosedStyle;
+            const end = close + style_close.len;
+            try page.appendSlice(gpa, rest[start..end]);
+            rest = rest[end..];
+        }
+    }
+};
+
+const Body = struct {
+    html: []const u8,
+
+    fn parse(html: []const u8) !Body {
+        const body = between(html, "<body>", "</body>") orelse return error.Bodiless;
+        return .{
+            .html = body,
+        };
+    }
+
+    fn append(body: Body, gpa: std.mem.Allocator, page: *std.ArrayList(u8)) !void {
+        try page.appendSlice(gpa, body.html);
     }
 };
 
@@ -67,14 +97,16 @@ const Post = struct {
     tags: []const []const u8,
     published: Date,
     updated: ?Date,
-    html: []const u8,
+    page: []const u8,
 
     fn parse(gpa: std.mem.Allocator, path: []const u8, html: []const u8, json: []const u8) !Post {
         const head = try Head.parse(html);
+        const body = try Body.parse(html);
         const meta = try std.json.parseFromSliceLeaky(Meta, gpa, json, .{});
         const published = try Date.parse(meta.published);
         const updated = if (meta.updated) |raw| try Date.parse(raw) else null;
         const tags = try parseTags(gpa, head.keywords orelse "");
+        const page = try extractPage(gpa, head, body);
         return .{
             .path = path,
             .title = head.title,
@@ -82,7 +114,7 @@ const Post = struct {
             .tags = tags,
             .published = published,
             .updated = updated,
-            .html = html,
+            .page = page,
         };
     }
 
@@ -132,6 +164,13 @@ fn dedup(sorted: [][]const u8) [][]const u8 {
     return sorted[0..len];
 }
 
+fn extractPage(gpa: std.mem.Allocator, head: Head, body: Body) ![]const u8 {
+    var page: std.ArrayList(u8) = .empty;
+    try head.append(gpa, &page);
+    try body.append(gpa, &page);
+    return page.toOwnedSlice(gpa);
+}
+
 fn readPosts(gpa: std.mem.Allocator, io: std.Io, inputs: std.Io.Dir) ![]Post {
     var dir = try inputs.openDir(io, "posts", .{ .iterate = true });
     defer dir.close(io);
@@ -144,6 +183,7 @@ fn readPosts(gpa: std.mem.Allocator, io: std.Io, inputs: std.Io.Dir) ![]Post {
             continue;
         }
         const path = try gpa.dupe(u8, entry.path);
+        // maybe we put this under post namespace?
         const post = readPost(gpa, io, dir, path) catch |err| {
             std.debug.panic("posts/{s}: {t}", .{ path, err });
         };
