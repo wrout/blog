@@ -37,19 +37,16 @@ pub fn build(b: *std.Build) void {
     });
     const gen_run = b.addRunArtifact(gen);
     gen_run.addDirectoryArg(inputs.getDirectory());
-    const site = gen_run.addOutputDirectoryArg("site");
-
-    const gen_cmd = b.step("gen", "generate site");
-    gen_cmd.dependOn(&gen_run.step);
-
+    const public = gen_run.addOutputDirectoryArg("public");
+    // depends on gen_run public output
     const public_install = b.addInstallDirectory(.{
-        .source_dir = site.path(b, "public"),
+        .source_dir = public,
         .install_dir = .prefix,
         .install_subdir = "public",
     });
-    const public_cmd = b.step("public", "install generated site");
-    public_cmd.dependOn(gen_cmd);
-    public_cmd.dependOn(&public_install.step);
+
+    const gen_cmd = b.step("gen", "generate site");
+    gen_cmd.dependOn(&public_install.step);
 
     const serve = b.addExecutable(.{
         .name = "blog",
@@ -60,7 +57,7 @@ pub fn build(b: *std.Build) void {
         }),
     });
     const serve_run = b.addRunArtifact(serve);
-    serve_run.step.dependOn(public_cmd);
+    serve_run.step.dependOn(gen_cmd);
     const serve_cmd = b.step("serve", "run server");
     serve_cmd.dependOn(&serve_run.step);
 }
