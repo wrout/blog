@@ -3,24 +3,23 @@ const std = @import("std");
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
-    const typst = typstPath(b) orelse return;
+    const typst_lazy = toolPath(b, typst_tool);
+    const minijinja_lazy = toolPath(b, minijinja_tool);
+    const typst = typst_lazy orelse return;
+    const minijinja = minijinja_lazy orelse return;
     // for post changes
     b.graph.poisonCache();
-
-    const manifest = b.createModule(.{
-        .root_source_file = b.path("src/manifest.zig"),
-    });
 
     const inputs = b.addWriteFiles();
     // copy every post into one staging tree, whose dirname is hash of all file contents
     // - changing a post changes dirname... which refreshes gen...
     _ = inputs.addCopyDirectory(b.path("content/static"), "static", .{});
     for (postPaths(b)) |path| {
-        const name = path[0 .. path.len - ".typ".len];
         const post = typeset(b, typst, path);
-        _ = inputs.addCopyFile(post.source, b.fmt("posts/{s}", .{path}));
-        _ = inputs.addCopyFile(post.page, b.fmt("posts/{s}.html", .{name}));
-        _ = inputs.addCopyFile(post.meta, b.fmt("posts/{s}.json", .{name}));
+        const staged = b.pathJoin(&.{ "posts", path });
+        _ = inputs.addCopyFile(post.source, b.pathJoin(&.{ staged, "source.typ" }));
+        _ = inputs.addCopyFile(post.page, b.pathJoin(&.{ staged, "page.html" }));
+        _ = inputs.addCopyFile(post.meta, b.pathJoin(&.{ staged, "meta.json" }));
     }
 
     const gen = b.addExecutable(.{
@@ -30,12 +29,10 @@ pub fn build(b: *std.Build) void {
             // pick build host, since this is a build step...
             .target = b.graph.host,
             .optimize = optimize,
-            .imports = &.{
-                .{ .name = "manifest", .module = manifest },
-            },
         }),
     });
     const gen_run = b.addRunArtifact(gen);
+    gen_run.addFileArg(minijinja);
     gen_run.addDirectoryArg(inputs.getDirectory());
     const public = gen_run.addOutputDirectoryArg("public");
     // depends on gen_run public output
@@ -62,6 +59,36 @@ pub fn build(b: *std.Build) void {
     serve_cmd.dependOn(&serve_run.step);
 }
 
+const Tool = struct {
+    x86_64: []const u8,
+    aarch64: []const u8,
+    exe: []const u8,
+};
+
+const typst_tool: Tool = .{
+    .x86_64 = "typst_x86_64",
+    .aarch64 = "typst_aarch64",
+    .exe = "typst",
+};
+
+const minijinja_tool: Tool = .{
+    .x86_64 = "minijinja_x86_64",
+    .aarch64 = "minijinja_aarch64",
+    .exe = "minijinja-cli",
+};
+
+// path for a vendored tool's executable on the build host
+fn toolPath(b: *std.Build, tool: Tool) ?std.Build.LazyPath {
+    const name = switch (b.graph.host.result.cpu.arch) {
+        .x86_64 => tool.x86_64,
+        .aarch64 => tool.aarch64,
+        else => @panic("no vendored tools for host"),
+    };
+    // dont want to download aarch64 on an x86_64 target, use lazy..
+    const dep = b.lazyDependency(name, .{}) orelse return null;
+    return dep.path(tool.exe);
+}
+
 const Typeset = struct {
     source: std.Build.LazyPath,
     page: std.Build.LazyPath,
@@ -69,7 +96,7 @@ const Typeset = struct {
 };
 
 fn typeset(b: *std.Build, typst: std.Build.LazyPath, path: []const u8) Typeset {
-    const source = b.path(b.fmt("content/posts/{s}", .{path}));
+    const source = b.path(b.pathJoin(&.{ "content", "posts", path }));
     // compile step
     const compile_run = std.Build.Step.Run.create(b, b.fmt("typst compile {s}", .{path}));
     // typst binary is hashed, bumping version necessitates post rebuild
@@ -103,19 +130,6 @@ fn addTypstPaths(b: *std.Build, run: *std.Build.Step.Run) void {
     run.addDirectoryArg(b.path("content"));
     run.addArg("--package-path");
     run.addDirectoryArg(b.path("zig-pkg/typst"));
-}
-
-// path for typst compiler
-fn typstPath(b: *std.Build) ?std.Build.LazyPath {
-    const host = b.graph.host.result.cpu.arch;
-    const name = switch (host) {
-        .x86_64 => "typst_x86_64",
-        .aarch64 => "typst_aarch64",
-        else => @panic("no typst for host"),
-    };
-    // dont want to download aarch64 on an x86_64 target, use lazy..
-    const dep = b.lazyDependency(name, .{}) orelse return null;
-    return dep.path("typst");
 }
 
 fn postPaths(b: *std.Build) []const []const u8 {
