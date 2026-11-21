@@ -32,10 +32,10 @@ pub fn build(b: *std.Build) void {
 
     const gen_run = b.addRunArtifact(gen);
     // cant hand a step fresh output dir in this version of zig, todo move to config
-    const public = gen_run.addOutputDirectoryArg("public");
+    const out = gen_run.addOutputDirectoryArg("out");
 
     const public_install = b.addInstallDirectory(.{
-        .source_dir = public,
+        .source_dir = out.path(b, "public"),
         .install_dir = .prefix,
         .install_subdir = "public",
     });
