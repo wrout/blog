@@ -13,20 +13,25 @@ pub const Post = struct {
     source: []const u8,
     stem: []const u8,
     document: typst.Document,
-    metadata: Metadata,
-    bytes: []const u8,
+    metadata: std.json.Parsed(Metadata),
 
-    pub fn init(gpa: std.mem.Allocator, source: []const u8, html: []const u8, json: []const u8, bytes: []const u8) !Post {
-        const stem = try stemOf(gpa, source);
-        const document = try typst.Document.init(gpa, html);
-        const metadata = try std.json.parseFromSliceLeaky(Metadata, gpa, json, .{});
+    pub fn init(gpa: std.mem.Allocator, source: []const u8, document: typst.Document, metadata: std.json.Parsed(Metadata)) !Post {
+        const owned = try gpa.dupe(u8, source);
+        errdefer gpa.free(owned);
+        const stem = try stemOf(gpa, owned);
         return .{
-            .source = source,
+            .source = owned,
             .stem = stem,
             .document = document,
             .metadata = metadata,
-            .bytes = bytes,
         };
+    }
+
+    pub fn deinit(post: Post, gpa: std.mem.Allocator) void {
+        gpa.free(post.source);
+        gpa.free(post.stem);
+        post.document.deinit(gpa);
+        post.metadata.deinit();
     }
 
     fn lessThan(_: void, a: Post, b: Post) bool {
@@ -36,7 +41,7 @@ pub const Post = struct {
 
 fn stemOf(gpa: std.mem.Allocator, source: []const u8) ![]const u8 {
     const name = std.fs.path.stem(source);
-    const parent = std.fs.path.dirname(source) orelse return name;
+    const parent = std.fs.path.dirname(source) orelse return gpa.dupe(u8, name);
     return std.fs.path.join(gpa, &.{ parent, name });
 }
 
@@ -49,39 +54,48 @@ pub const Posts = struct {
             .items = items,
         };
     }
+
+    pub fn deinit(posts: Posts, gpa: std.mem.Allocator) void {
+        for (posts.items) |post| {
+            post.deinit(gpa);
+        }
+        gpa.free(posts.items);
+    }
 };
 
-const staged_page = "page.html";
-const staged_meta = "meta.json";
-const staged_source = "source.typ";
-
-pub fn readPosts(gpa: std.mem.Allocator, io: std.Io, inputs: std.Io.Dir) !Posts {
-    var dir = try inputs.openDir(io, "posts", .{ .iterate = true });
-    defer dir.close(io);
-    var walker = try dir.walk(gpa);
+pub fn readPosts(gpa: std.mem.Allocator, io: std.Io, posts: std.Io.Dir, compiler: typst.Compiler) !Posts {
+    var walker = try posts.walk(gpa);
     defer walker.deinit(io);
     var items: std.ArrayList(Post) = .empty;
-    errdefer items.deinit(gpa);
+    errdefer {
+        for (items.items) |post| {
+            post.deinit(gpa);
+        }
+        items.deinit(gpa);
+    }
     while (try walker.next(io)) |entry| {
-        if (entry.kind != .file or !std.mem.eql(u8, entry.basename, staged_page)) {
+        if (entry.kind != .file or !std.mem.eql(u8, std.fs.path.extension(entry.basename), ".typ")) {
             continue;
         }
-        const source = std.fs.path.dirname(entry.path) orelse continue;
-        const owned = try gpa.dupe(u8, source);
-        const post = readPost(gpa, io, dir, owned) catch |err| {
-            std.debug.panic("posts/{s}: {t}", .{ owned, err });
+        const post = readPost(gpa, io, posts, compiler, entry.path) catch |err| {
+            std.debug.panic("posts/{s}: {t}", .{ entry.path, err });
         };
+        errdefer post.deinit(gpa);
         try items.append(gpa, post);
     }
+    // posts takes ownership
     const owned = try items.toOwnedSlice(gpa);
     return Posts.init(owned);
 }
 
-fn readPost(gpa: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, source: []const u8) !Post {
-    var staged = try dir.openDir(io, source, .{});
-    defer staged.close(io);
-    const html = try staged.readFileAlloc(io, staged_page, gpa, .unlimited);
-    const json = try staged.readFileAlloc(io, staged_meta, gpa, .unlimited);
-    const bytes = try staged.readFileAlloc(io, staged_source, gpa, .unlimited);
-    return Post.init(gpa, source, html, json, bytes);
+fn readPost(gpa: std.mem.Allocator, io: std.Io, posts: std.Io.Dir, compiler: typst.Compiler, source: []const u8) !Post {
+    const path = try posts.realPathFileAlloc(io, source, gpa);
+    defer gpa.free(path);
+    const document = try compiler.compile(gpa, io, path);
+    errdefer document.deinit(gpa);
+    const meta = try compiler.metadata(gpa, io, path);
+    defer meta.deinit();
+    const metadata = try meta.decode(gpa, Metadata);
+    errdefer metadata.deinit();
+    return Post.init(gpa, source, document, metadata);
 }
