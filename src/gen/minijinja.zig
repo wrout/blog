@@ -47,7 +47,7 @@ pub const Renderer = struct {
     }
 };
 
-fn writeContext(gpa: std.mem.Allocator, io: std.Io, contexts: std.Io.Dir, context: anytype) ![]const u8 {
+fn writeContext(gpa: std.mem.Allocator, io: std.Io, contexts: std.Io.Dir, context: anytype) ![:0]const u8 {
     var json: std.Io.Writer.Allocating = .init(gpa);
     defer json.deinit();
     try std.json.Stringify.value(context, .{}, &json.writer);
