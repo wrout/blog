@@ -6,6 +6,7 @@ const minijinja = @import("minijinja.zig");
 const post = @import("post.zig");
 const static = @import("static.zig");
 const context = @import("context.zig");
+const gzip = @import("gzip.zig");
 
 const Input = struct {
     content: std.Io.Dir,
@@ -46,7 +47,7 @@ const Output = struct {
     pub fn init(io: std.Io, dir: std.Io.Dir, path: []const u8) !Output {
         var out = try dir.createDirPathOpen(io, path, .{});
         defer out.close(io);
-        var public = try out.createDirPathOpen(io, "public", .{});
+        var public = try out.createDirPathOpen(io, "public", .{ .open_options = .{ .iterate = true } });
         errdefer public.close(io);
         var static_dir = try public.createDirPathOpen(io, "static", .{});
         errdefer static_dir.close(io);
@@ -198,4 +199,5 @@ pub fn main(init: std.process.Init) !void {
     for (posts.items) |*p| {
         try writePage(gpa, io, output.public, renderer, "post.html", &.{ "posts", p.stem, "index.html" }, context.Post.init(&site, .init(p)));
     }
+    try gzip.compressTree(gpa, io, output.public);
 }
