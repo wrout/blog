@@ -40,6 +40,21 @@ pub fn build(b: *std.Build) void {
         .install_subdir = "public",
     });
     b.getInstallStep().dependOn(&public_install.step);
+
+    const serve = b.addExecutable(.{
+        .name = "serve",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/serve/main.zig"),
+            .target = b.graph.host,
+            .optimize = optimize,
+        }),
+    });
+    b.installArtifact(serve);
+
+    const serve_run = b.addRunArtifact(serve);
+    serve_run.addDirectoryArg(out.path(b, "public"));
+    const serve_step = b.step("serve", "serve the generated site");
+    serve_step.dependOn(&serve_run.step);
 }
 
 const Tool = struct {
