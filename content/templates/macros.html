@@ -1,6 +1,6 @@
 {% macro asset(path) %}
 {% set file = assets|selectattr("path", "eq", path)|first %}
-/static/{{ path|urlencode }}{% if file %}?v={{ file.version }}{% endif %}
+/static/{{ path|urlencode|safe }}{% if file %}?v={{ file.version }}{% endif %}
 {% endmacro %}
 
 {% macro tree(node, current) %}
