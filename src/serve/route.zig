@@ -1,66 +1,5 @@
 const std = @import("std");
 
-pub fn handle(gpa: std.mem.Allocator, io: std.Io, resolver: Resolver, stream: std.Io.net.Stream) void {
-    defer stream.close(io);
-    var in_buffer: [8192]u8 = undefined;
-    var out_buffer: [8192]u8 = undefined;
-    var reader = stream.reader(io, &in_buffer);
-    var writer = stream.writer(io, &out_buffer);
-    var connection: Connection = .init(&reader.interface, &writer.interface);
-    while (connection.receive()) |received| {
-        var request = received;
-        respond(gpa, io, resolver, &request) catch |err| {
-            std.log.warn("respond: {t}", .{err});
-            return;
-        };
-        if (!request.inner.head.keep_alive) {
-            return;
-        }
-    } else |err| switch (err) {
-        error.ConnectionClosed => {},
-        else => std.log.warn("receive: {t}", .{err}),
-    }
-}
-
-fn respond(gpa: std.mem.Allocator, io: std.Io, resolver: Resolver, request: *Request) !void {
-    switch (request.inner.head.method) {
-        .GET, .HEAD => {},
-        else => return request.reply(.method_not_allowed),
-    }
-    var asset = try resolver.find(gpa, io, request.inner.head.target);
-    defer asset.close(io);
-    try request.send(io, &asset);
-}
-
-pub const Resolver = struct {
-    public: std.Io.Dir,
-
-    pub fn find(resolver: Resolver, gpa: std.mem.Allocator, io: std.Io, target: []const u8) !Asset {
-        const path = try Path.parse(gpa, target) orelse return resolver.missing(gpa, io);
-        defer path.deinit(gpa);
-        return try resolver.open(gpa, io, path, .ok) orelse resolver.missing(gpa, io);
-    }
-
-    fn missing(resolver: Resolver, gpa: std.mem.Allocator, io: std.Io) !Asset {
-        return try resolver.open(gpa, io, .not_found_page, .not_found) orelse error.MissingNotFoundPage;
-    }
-
-    fn open(resolver: Resolver, gpa: std.mem.Allocator, io: std.Io, path: Path, status: std.http.Status) !?Asset {
-        const file_path = try resolver.locate(gpa, io, path) orelse return null;
-        defer gpa.free(file_path);
-        const file = resolver.public.openFile(io, file_path, .{}) catch return null;
-        return try Asset.init(io, file, status, .of(file_path));
-    }
-
-    fn locate(resolver: Resolver, gpa: std.mem.Allocator, io: std.Io, path: Path) !?[]const u8 {
-        const stat = resolver.public.statFile(io, path.relative, .{}) catch return null;
-        if (stat.kind == .directory) {
-            return try std.fs.path.join(gpa, &.{ path.relative, "index.html" });
-        }
-        return try gpa.dupe(u8, path.relative);
-    }
-};
-
 const Path = struct {
     relative: []const u8,
 
@@ -92,25 +31,47 @@ const Path = struct {
     }
 };
 
-const Asset = struct {
-    file: std.Io.File,
-    size: u64,
-    status: std.http.Status,
-    media: Media,
+const Encoding = enum {
+    identity,
+    gzip,
 
-    fn init(io: std.Io, file: std.Io.File, status: std.http.Status, media: Media) !Asset {
-        errdefer file.close(io);
-        const stat = try file.stat(io);
-        return .{
-            .file = file,
-            .size = stat.size,
-            .status = status,
-            .media = media,
+    fn negotiate(request: *const Request) Encoding {
+        var headers = request.inner.iterateHeaders();
+        while (headers.next()) |header| {
+            if (!std.ascii.eqlIgnoreCase(header.name, "accept-encoding")) {
+                continue;
+            }
+            var codings = std.mem.tokenizeScalar(u8, header.value, ',');
+            while (codings.next()) |coding| {
+                var parameters = std.mem.splitScalar(u8, coding, ';');
+                const name = std.mem.trim(u8, parameters.first(), " ");
+                if (std.ascii.eqlIgnoreCase(name, "gzip")) {
+                    return .gzip;
+                }
+            }
+        }
+        return .identity;
+    }
+
+    fn candidates(encoding: Encoding) []const Encoding {
+        return switch (encoding) {
+            .gzip => &.{ .gzip, .identity },
+            .identity => &.{.identity},
         };
     }
 
-    fn close(asset: Asset, io: std.Io) void {
-        asset.file.close(io);
+    fn extension(encoding: Encoding) []const u8 {
+        return switch (encoding) {
+            .gzip => ".gz",
+            .identity => "",
+        };
+    }
+
+    fn contentEncoding(encoding: Encoding) ?[]const u8 {
+        return switch (encoding) {
+            .gzip => "gzip",
+            .identity => null,
+        };
     }
 };
 
@@ -157,51 +118,65 @@ const Media = enum {
     }
 };
 
-const Connection = struct {
-    server: std.http.Server,
+const Asset = struct {
+    file: std.Io.File,
+    size: u64,
+    status: std.http.Status,
+    media: Media,
+    encoding: Encoding,
 
-    fn init(reader: *std.Io.Reader, writer: *std.Io.Writer) Connection {
+    fn init(io: std.Io, file: std.Io.File, status: std.http.Status, media: Media, encoding: Encoding) !Asset {
+        errdefer file.close(io);
+        const stat = try file.stat(io);
         return .{
-            .server = .init(reader, writer),
+            .file = file,
+            .size = stat.size,
+            .status = status,
+            .media = media,
+            .encoding = encoding,
         };
     }
 
-    fn receive(connection: *Connection) !Request {
-        const inner = connection.server.receiveHead() catch |err| switch (err) {
-            error.HttpConnectionClosing => return error.ConnectionClosed,
-            else => return err,
-        };
-        return .{
-            .inner = inner,
-        };
+    fn close(asset: Asset, io: std.Io) void {
+        asset.file.close(io);
     }
 };
 
-const Request = struct {
-    inner: std.http.Server.Request,
+pub const Resolver = struct {
+    public: std.Io.Dir,
 
-    fn reply(request: *Request, status: std.http.Status) !void {
-        return request.inner.respond("", .{ .status = status });
+    pub fn find(resolver: Resolver, gpa: std.mem.Allocator, io: std.Io, target: []const u8, encoding: Encoding) !Asset {
+        const path = try Path.parse(gpa, target) orelse return resolver.missing(gpa, io, encoding);
+        defer path.deinit(gpa);
+        return try resolver.open(gpa, io, path, .ok, encoding) orelse resolver.missing(gpa, io, encoding);
     }
 
-    const cache = "public, max-age=31536000, immutable";
+    fn missing(resolver: Resolver, gpa: std.mem.Allocator, io: std.Io, encoding: Encoding) !Asset {
+        return try resolver.open(gpa, io, .not_found_page, .not_found, encoding) orelse error.MissingNotFoundPage;
+    }
 
-    fn send(request: *Request, io: std.Io, asset: *Asset) !void {
-        var headers: Headers = .{};
-        try headers.add("content-type", asset.media.contentType());
-        try headers.add("cache-control", cache);
-        var file_buffer: [8192]u8 = undefined;
-        var file_reader = asset.file.reader(io, &file_buffer);
-        var body_buffer: [8192]u8 = undefined;
-        var body = try request.inner.respondStreaming(&body_buffer, .{
-            .content_length = asset.size,
-            .respond_options = .{
-                .status = asset.status,
-                .extra_headers = headers.slice(),
-            },
-        });
-        _ = try body.writer.sendFileAll(&file_reader, .unlimited);
-        try body.end();
+    fn open(resolver: Resolver, gpa: std.mem.Allocator, io: std.Io, path: Path, status: std.http.Status, encoding: Encoding) !?Asset {
+        const file_path = try resolver.locate(gpa, io, path) orelse return null;
+        defer gpa.free(file_path);
+        const media: Media = .of(file_path);
+        for (encoding.candidates()) |candidate| {
+            const variant = try std.mem.concat(gpa, u8, &.{ file_path, candidate.extension() });
+            defer gpa.free(variant);
+            const file = resolver.public.openFile(io, variant, .{}) catch |err| switch (err) {
+                error.FileNotFound => continue,
+                else => return err,
+            };
+            return try Asset.init(io, file, status, media, candidate);
+        }
+        return null;
+    }
+
+    fn locate(resolver: Resolver, gpa: std.mem.Allocator, io: std.Io, path: Path) !?[]const u8 {
+        const stat = resolver.public.statFile(io, path.relative, .{}) catch return null;
+        if (stat.kind == .directory) {
+            return try std.fs.path.join(gpa, &.{ path.relative, "index.html" });
+        }
+        return try gpa.dupe(u8, path.relative);
     }
 };
 
@@ -227,3 +202,88 @@ const Headers = struct {
         return headers.items[0..headers.len];
     }
 };
+
+const Request = struct {
+    inner: std.http.Server.Request,
+
+    fn reply(request: *Request, status: std.http.Status) !void {
+        return request.inner.respond("", .{ .status = status });
+    }
+
+    const cache = "public, max-age=31536000, immutable";
+
+    fn send(request: *Request, io: std.Io, asset: *Asset) !void {
+        var headers: Headers = .{};
+        try headers.add("content-type", asset.media.contentType());
+        try headers.add("cache-control", cache);
+        try headers.add("vary", "accept-encoding");
+        if (asset.encoding.contentEncoding()) |value| {
+            try headers.add("content-encoding", value);
+        }
+        var file_buffer: [8192]u8 = undefined;
+        var file_reader = asset.file.reader(io, &file_buffer);
+        var body_buffer: [8192]u8 = undefined;
+        var body = try request.inner.respondStreaming(&body_buffer, .{
+            .content_length = asset.size,
+            .respond_options = .{
+                .status = asset.status,
+                .extra_headers = headers.slice(),
+            },
+        });
+        _ = try body.writer.sendFileAll(&file_reader, .unlimited);
+        try body.end();
+    }
+};
+
+const Connection = struct {
+    server: std.http.Server,
+
+    fn init(reader: *std.Io.Reader, writer: *std.Io.Writer) Connection {
+        return .{
+            .server = .init(reader, writer),
+        };
+    }
+
+    fn receive(connection: *Connection) !Request {
+        const inner = connection.server.receiveHead() catch |err| switch (err) {
+            error.HttpConnectionClosing => return error.ConnectionClosed,
+            else => return err,
+        };
+        return .{
+            .inner = inner,
+        };
+    }
+};
+
+pub fn handle(gpa: std.mem.Allocator, io: std.Io, resolver: Resolver, stream: std.Io.net.Stream) void {
+    defer stream.close(io);
+    var in_buffer: [8192]u8 = undefined;
+    var out_buffer: [8192]u8 = undefined;
+    var reader = stream.reader(io, &in_buffer);
+    var writer = stream.writer(io, &out_buffer);
+    var connection: Connection = .init(&reader.interface, &writer.interface);
+    while (connection.receive()) |received| {
+        var request = received;
+        respond(gpa, io, resolver, &request) catch |err| {
+            std.log.warn("respond: {t}", .{err});
+            return;
+        };
+        if (!request.inner.head.keep_alive) {
+            return;
+        }
+    } else |err| switch (err) {
+        error.ConnectionClosed => {},
+        else => std.log.warn("receive: {t}", .{err}),
+    }
+}
+
+fn respond(gpa: std.mem.Allocator, io: std.Io, resolver: Resolver, request: *Request) !void {
+    switch (request.inner.head.method) {
+        .GET, .HEAD => {},
+        else => return request.reply(.method_not_allowed),
+    }
+    const encoding = Encoding.negotiate(request);
+    var asset = try resolver.find(gpa, io, request.inner.head.target, encoding);
+    defer asset.close(io);
+    try request.send(io, &asset);
+}
