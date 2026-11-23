@@ -49,11 +49,33 @@ fn serve(gpa: std.mem.Allocator, io: std.Io, resolver: route.Resolver, listener:
     defer group.cancel(io);
     while (true) {
         const stream = try listener.accept(io);
-        group.concurrent(io, route.handle, .{ gpa, io, resolver, stream }) catch |err| {
+        group.concurrent(io, connect, .{ gpa, io, resolver, stream }) catch |err| {
             std.log.warn("dropped connection: {t}", .{err});
             stream.close(io);
         };
     }
+}
+
+const lifetime: std.Io.Duration = .fromSeconds(30);
+
+const Deadline = union(enum) {
+    handle: void,
+    expire: std.Io.Cancelable!void,
+};
+
+fn connect(gpa: std.mem.Allocator, io: std.Io, resolver: route.Resolver, stream: std.Io.net.Stream) void {
+    var buffer: [2]Deadline = undefined;
+    var race = std.Io.Select(Deadline).init(io, &buffer);
+    defer race.cancelDiscard();
+    race.concurrent(.handle, route.handle, .{ gpa, io, resolver, stream }) catch |err| {
+        std.log.warn("dropped connection: {t}", .{err});
+        stream.close(io);
+        return;
+    };
+    race.concurrent(.expire, std.Io.sleep, .{ io, lifetime, .awake }) catch |err| {
+        std.log.warn("unbounded connection: {t}", .{err});
+    };
+    _ = race.await() catch {};
 }
 
 // todo support windows?
