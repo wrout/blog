@@ -137,27 +137,51 @@ body::after {
 
 .scroll {
   height: 100%;
+  overflow-x: hidden;
   overflow-y: auto;
+}
+
+.page {
+  position: relative;
+  isolation: isolate;
+  min-height: 100%;
   padding: clamp(1rem, 4vw, 3rem);
 }
 
 .wall {
   position: absolute;
-  inset: -2rem;
+  inset: 0;
   z-index: -1;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
-  align-content: start;
-  filter: blur(6px);
+  overflow: clip;
+  container-type: size;
   opacity: 0.35;
   pointer-events: none;
 }
 
-.wall img {
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+  animation: drift 1200s linear infinite alternate;
+}
+
+.tiles img {
   display: block;
   width: 100%;
   aspect-ratio: 1;
   object-fit: cover;
+  filter: blur(6px);
+}
+
+@keyframes drift {
+  to {
+    transform: translateY(calc(-100% + 100cqh));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tiles {
+    animation: none;
+  }
 }
 
 .panel {

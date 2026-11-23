@@ -21,12 +21,16 @@
     </nav>
     <main class="pane">
       <div class="scroll">
-        {% block content %}{% endblock %}
-      </div>
-      <div class="wall" aria-hidden="true">
-        {% for cover in assets|selectattr("path", "startingwith", "images/covers/160/")|sort(attribute="version") %}
-        <img src="{{ m.asset(cover.path) }}" alt="" loading="lazy" decoding="async">
-        {% endfor %}
+        <div class="page">
+          <div class="wall" aria-hidden="true">
+            <div class="tiles">
+              {% for cover in assets|selectattr("path", "startingwith", "images/covers/160/")|sort(attribute="version") %}
+              <img src="{{ m.asset(cover.path) }}" alt="" loading="lazy" decoding="async">
+              {% endfor %}
+            </div>
+          </div>
+          {% block content %}{% endblock %}
+        </div>
       </div>
     </main>
   </body>
