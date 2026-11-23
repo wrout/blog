@@ -2,8 +2,9 @@ const std = @import("std");
 
 const Path = struct {
     relative: []const u8,
+    versioned: bool,
 
-    const not_found_page: Path = .{ .relative = "404.html" };
+    const not_found_page: Path = .{ .relative = "404.html", .versioned = false };
 
     fn parse(gpa: std.mem.Allocator, target: []const u8) !?Path {
         const uri = std.Uri.parseAfterScheme("", target) catch return null;
@@ -23,6 +24,8 @@ const Path = struct {
         }
         return .{
             .relative = try std.fs.path.join(gpa, components.items),
+            // todo more robust check here...
+            .versioned = uri.query != null,
         };
     }
 
@@ -118,14 +121,27 @@ const Media = enum {
     }
 };
 
+const Cache = enum {
+    revalidate,
+    immutable,
+
+    fn header(cache: Cache) []const u8 {
+        return switch (cache) {
+            .revalidate => "no-cache",
+            .immutable => "public, max-age=31536000, immutable",
+        };
+    }
+};
+
 const Asset = struct {
     file: std.Io.File,
     size: u64,
     status: std.http.Status,
     media: Media,
     encoding: Encoding,
+    cache: Cache,
 
-    fn init(io: std.Io, file: std.Io.File, status: std.http.Status, media: Media, encoding: Encoding) !Asset {
+    fn init(io: std.Io, file: std.Io.File, status: std.http.Status, media: Media, encoding: Encoding, cache: Cache) !Asset {
         errdefer file.close(io);
         const stat = try file.stat(io);
         return .{
@@ -134,6 +150,7 @@ const Asset = struct {
             .status = status,
             .media = media,
             .encoding = encoding,
+            .cache = cache,
         };
     }
 
@@ -159,6 +176,7 @@ pub const Resolver = struct {
         const file_path = try resolver.locate(gpa, io, path) orelse return null;
         defer gpa.free(file_path);
         const media: Media = .of(file_path);
+        const cache: Cache = if (path.versioned and media != .html) .immutable else .revalidate;
         for (encoding.candidates()) |candidate| {
             const variant = try std.mem.concat(gpa, u8, &.{ file_path, candidate.extension() });
             defer gpa.free(variant);
@@ -166,7 +184,7 @@ pub const Resolver = struct {
                 error.FileNotFound => continue,
                 else => return err,
             };
-            return try Asset.init(io, file, status, media, candidate);
+            return try Asset.init(io, file, status, media, candidate, cache);
         }
         return null;
     }
@@ -210,12 +228,10 @@ const Request = struct {
         return request.inner.respond("", .{ .status = status });
     }
 
-    const cache = "public, max-age=31536000, immutable";
-
     fn send(request: *Request, io: std.Io, asset: *Asset) !void {
         var headers: Headers = .{};
         try headers.add("content-type", asset.media.contentType());
-        try headers.add("cache-control", cache);
+        try headers.add("cache-control", asset.cache.header());
         try headers.add("vary", "accept-encoding");
         if (asset.encoding.contentEncoding()) |value| {
             try headers.add("content-encoding", value);
