@@ -1,5 +1,4 @@
 const std = @import("std");
-const config = @import("config");
 
 const typst = @import("typst.zig");
 const minijinja = @import("minijinja.zig");
@@ -70,14 +69,35 @@ const Output = struct {
     }
 };
 
+const Args = struct {
+    typst: []const u8,
+    minijinja: []const u8,
+    packages: []const u8,
+    content: []const u8,
+    out: []const u8,
+
+    fn parse(args: []const [:0]const u8) Args {
+        if (args.len != 6) {
+            std.debug.panic("usage: {s} <typst> <minijinja> <packages> <content> <out>", .{args[0]});
+        }
+        return .{
+            .typst = args[1],
+            .minijinja = args[2],
+            .packages = args[3],
+            .content = args[4],
+            .out = args[5],
+        };
+    }
+};
+
 const Tools = struct {
     typst: Typst,
     minijinja: MiniJinja,
 
-    pub fn init(gpa: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Tools {
-        const typst_tool = try Typst.init(gpa, io, dir);
+    pub fn init(gpa: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, typst_path: []const u8, packages_path: []const u8, minijinja_path: []const u8) !Tools {
+        const typst_tool = try Typst.init(gpa, io, dir, typst_path, packages_path);
         errdefer typst_tool.deinit(gpa);
-        const minijinja_tool = try MiniJinja.init(gpa, io, dir);
+        const minijinja_tool = try MiniJinja.init(gpa, io, dir, minijinja_path);
         return .{
             .typst = typst_tool,
             .minijinja = minijinja_tool,
@@ -93,10 +113,10 @@ const Tools = struct {
         exe: [:0]const u8,
         packages: [:0]const u8,
 
-        pub fn init(gpa: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Typst {
-            const exe = try dir.realPathFileAlloc(io, config.typst, gpa);
+        pub fn init(gpa: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, exe_path: []const u8, packages_path: []const u8) !Typst {
+            const exe = try dir.realPathFileAlloc(io, exe_path, gpa);
             errdefer gpa.free(exe);
-            const packages = try dir.realPathFileAlloc(io, config.packages, gpa);
+            const packages = try dir.realPathFileAlloc(io, packages_path, gpa);
             return .{
                 .exe = exe,
                 .packages = packages,
@@ -120,8 +140,8 @@ const Tools = struct {
     const MiniJinja = struct {
         exe: [:0]const u8,
 
-        pub fn init(gpa: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !MiniJinja {
-            const exe = try dir.realPathFileAlloc(io, config.minijinja, gpa);
+        pub fn init(gpa: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, exe_path: []const u8) !MiniJinja {
+            const exe = try dir.realPathFileAlloc(io, exe_path, gpa);
             return .{
                 .exe = exe,
             };
@@ -169,18 +189,16 @@ fn writeSources(io: std.Io, from: std.Io.Dir, to: std.Io.Dir, posts: post.Posts)
 pub fn main(init: std.process.Init) !void {
     const io = init.io;
     const gpa = init.gpa;
-    const args = try init.minimal.args.toSlice(init.arena.allocator());
-    if (args.len != 2) {
-        std.debug.panic("usage: {s} <out>", .{args[0]});
-    }
+    const arena = init.arena.allocator();
+    const raw_args = try init.minimal.args.toSlice(arena);
+    const args = Args.parse(raw_args);
     const cwd = std.Io.Dir.cwd();
-    var input = try Input.init(io, cwd, config.content);
+    var input = try Input.init(io, cwd, args.content);
     defer input.deinit(io);
-    const out = args[1];
-    var output = try Output.init(io, cwd, out);
+    var output = try Output.init(io, cwd, args.out);
     defer output.deinit(io);
 
-    const tools = try Tools.init(gpa, io, cwd);
+    const tools = try Tools.init(gpa, io, cwd, args.typst, args.packages, args.minijinja);
     defer tools.deinit(gpa);
     const compiler = tools.typst.compiler(input.content);
     const renderer = tools.minijinja.renderer(input.templates, output.contexts);

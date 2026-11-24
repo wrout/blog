@@ -41,12 +41,6 @@ pub fn build(b: *std.Build) void {
     const content = b.addWriteFiles();
     _ = content.addCopyDirectory(b.path("content"), "", .{});
 
-    const config = b.addOptions();
-    config.addOptionPathDirectory("content", content.getDirectory());
-    config.addOptionPathDirectory("packages", packages.getDirectory());
-    config.addOptionPath("typst", typst);
-    config.addOptionPath("minijinja", minijinja);
-
     const gen = b.addExecutable(.{
         .name = "gen",
         .root_module = b.createModule(.{
@@ -55,10 +49,12 @@ pub fn build(b: *std.Build) void {
             .optimize = optimize,
         }),
     });
-    gen.root_module.addOptions("config", config);
 
     const gen_run = b.addRunArtifact(gen);
-    // cant hand a step fresh output dir in this version of zig, todo move to config
+    gen_run.addFileArg(typst);
+    gen_run.addFileArg(minijinja);
+    gen_run.addDirectoryArg(packages.getDirectory());
+    gen_run.addDirectoryArg(content.getDirectory());
     const out = gen_run.addOutputDirectoryArg("out");
 
     const public_install = b.addInstallDirectory(.{
