@@ -36,7 +36,19 @@
         <a class="site" href="/">grotto road</a>
         <p>notes to self</p>
       </header>
-      {{ m.tree(tree, current|default(none)) }}
+      <div class="tree">
+        {{ m.tree(tree, current|default(none)) }}
+      </div>
+      <img
+        class="juice"
+        src="{{ m.asset("images/orange-juice-638.jpeg") }}"
+        srcset="{{ m.asset("images/orange-juice-638.jpeg") }} 638w, {{ m.asset("images/orange-juice-1277.jpeg") }} 1277w"
+        sizes="18rem"
+        alt="shoes n orange juice"
+        width="1277"
+        height="1273"
+        decoding="async"
+      >
     </nav>
     <main class="pane">
       <div class="scroll">

@@ -66,14 +66,31 @@ body {
 
 .sidebar {
   position: relative;
-  overflow-y: auto;
-  padding: 1.5rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
   border-right: 3px solid var(--edge);
   background: var(--panel);
 }
 
 .sidebar header {
-  margin-bottom: 1.5rem;
+  padding: 1.5rem 1.25rem 1.5rem;
+}
+
+.tree {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 1.25rem 1.5rem;
+}
+
+.juice {
+  display: block;
+  flex: none;
+  width: 100%;
+  height: auto;
+  border-top: 3px solid var(--edge);
 }
 
 .sidebar p,
@@ -429,13 +446,22 @@ h1 {
 
 @media (max-width: 48rem) {
   body {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
+    display: block;
+    height: auto;
+    overflow: visible;
   }
 
   .sidebar {
-    max-height: 35dvh;
-    border-right: none;
-    border-bottom: 3px solid var(--edge);
+    display: none;
+  }
+
+  .pane,
+  .scroll {
+    height: auto;
+    overflow: visible;
+  }
+
+  .page {
+    min-height: 100dvh;
   }
 }
