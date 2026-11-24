@@ -8,11 +8,11 @@ const host = "0.0.0.0";
 const port = 3000;
 
 pub fn main(init: std.process.Init) !void {
+    // const io = init.io;
+    const gpa = init.gpa;
     const rt = try zio.Runtime.init(gpa, .{});
     defer rt.deinit();
-    // const io = init.io;
     const io = rt.io();
-    const gpa = init.gpa;
     const args = try init.minimal.args.toSlice(init.arena.allocator());
     if (args.len != 2) {
         std.debug.panic("usage: {s} <public>", .{args[0]});
