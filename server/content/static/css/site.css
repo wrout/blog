@@ -122,6 +122,10 @@ a:is(:hover, :focus-visible) {
   color: var(--accent);
 }
 
+.sidebar picture {
+  display: contents;
+}
+
 .juice {
   flex: none;
   border-top: var(--rule);

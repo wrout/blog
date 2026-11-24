@@ -39,16 +39,21 @@
       <div class="tree">
         {{ m.tree(tree, current|default(none)) }}
       </div>
-      <img
-        class="juice"
-        src="{{ m.asset("images/orange-juice-638.jpeg") }}"
-        srcset="{{ m.asset("images/orange-juice-638.jpeg") }} 638w, {{ m.asset("images/orange-juice-1277.jpeg") }} 1277w"
-        sizes="18rem"
-        alt="shoes n orange juice"
-        width="1277"
-        height="1273"
-        decoding="async"
-      >
+      <picture>
+        <source
+          media="(width > 48rem)"
+          srcset="{{ m.asset("images/orange-juice-638.jpeg") }} 638w, {{ m.asset("images/orange-juice-1277.jpeg") }} 1277w"
+          sizes="18rem"
+        >
+        <img
+          class="juice"
+          src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
+          alt="shoes n orange juice"
+          width="1277"
+          height="1273"
+          fetchpriority="high"
+        >
+      </picture>
     </nav>
     <main class="pane">
       <div class="scroll">
