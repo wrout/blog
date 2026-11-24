@@ -53,6 +53,10 @@
     <main class="pane">
       <div class="scroll">
         <div class="page">
+          <header class="panel masthead">
+            <a class="site" href="/">grotto road</a>
+            <p>notes to self</p>
+          </header>
           {% block content %}{% endblock %}
           {% set covers = assets|selectattr("path", "startingwith", "images/covers/160/")|sort(attribute="version")|list %}
           <div class="wall" aria-hidden="true" style="--covers: {{ covers|length }}">

@@ -35,7 +35,7 @@ a {
   text-decoration: none;
 }
 
-:where(.sidebar) a {
+:where(.sidebar, .masthead) a {
   color: var(--ink);
   font-weight: 400;
 }
@@ -94,12 +94,18 @@ body {
 }
 
 .sidebar p,
+.masthead p,
 .dir {
   color: var(--muted);
 }
 
-.sidebar p {
+.sidebar p,
+.masthead p {
   font-size: 0.85rem;
+}
+
+.masthead {
+  display: none;
 }
 
 .sidebar ul {
@@ -215,7 +221,7 @@ body {
   height: auto;
 }
 
-.panel + .panel {
+.panel:not(.masthead) + .panel {
   margin-top: 2rem;
 }
 
@@ -453,6 +459,11 @@ h1 {
 
   .sidebar {
     display: none;
+  }
+
+  .masthead {
+    display: block;
+    margin-bottom: 2rem;
   }
 
   .pane,
