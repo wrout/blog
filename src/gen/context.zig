@@ -15,6 +15,14 @@ pub const Summary = struct {
             .metadata = p.metadata.value,
         };
     }
+
+    fn newerThan(_: void, a: Summary, b: Summary) bool {
+        return switch (std.mem.order(u8, a.metadata.published, b.metadata.published)) {
+            .gt => true,
+            .lt => false,
+            .eq => std.mem.lessThan(u8, a.stem, b.stem),
+        };
+    }
 };
 
 pub const Entry = struct {
@@ -57,11 +65,13 @@ pub const Base = struct {};
 pub const Macros = struct {};
 
 pub const Home = struct {
+    posts: []const Summary,
     tree: *const Tree,
     assets: []const Asset,
 
     pub fn init(site: *const Site) Home {
         return .{
+            .posts = site.posts,
             .tree = &site.tree,
             .assets = site.assets,
         };
@@ -97,6 +107,7 @@ pub const Post = struct {
 pub const Site = struct {
     tree: Tree,
     assets: []const Asset,
+    posts: []const Summary,
 
     pub fn init(
         gpa: std.mem.Allocator,
@@ -108,15 +119,19 @@ pub const Site = struct {
         const tree = try growTree(gpa, posts);
         errdefer tree.deinit(gpa);
         const assets = try listAssets(gpa, files);
+        errdefer gpa.free(assets);
+        const summaries = try listPosts(gpa, posts);
         return .{
             .tree = tree,
             .assets = assets,
+            .posts = summaries,
         };
     }
 
     pub fn deinit(site: Site, gpa: std.mem.Allocator) void {
         site.tree.deinit(gpa);
         gpa.free(site.assets);
+        gpa.free(site.posts);
     }
 };
 
@@ -203,4 +218,13 @@ fn listAssets(gpa: std.mem.Allocator, files: static.Static) ![]const Asset {
         };
     }
     return assets;
+}
+
+fn listPosts(gpa: std.mem.Allocator, posts: post.Posts) ![]const Summary {
+    const summaries = try gpa.alloc(Summary, posts.items.len);
+    for (posts.items, summaries) |*p, *summary| {
+        summary.* = .init(p);
+    }
+    std.mem.sort(Summary, summaries, {}, Summary.newerThan);
+    return summaries;
 }

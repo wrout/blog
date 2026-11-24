@@ -198,6 +198,28 @@ body {
   height: auto;
 }
 
+.panel + .panel {
+  margin-top: 2rem;
+}
+
+.index {
+  list-style: none;
+}
+
+.index li + li {
+  margin-top: 1.25rem;
+}
+
+.index time {
+  display: block;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.index p {
+  color: var(--muted);
+}
+
 h1 {
   font-size: clamp(1.9rem, 5vw, 2.6rem);
   line-height: 1.1;

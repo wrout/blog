@@ -2,6 +2,17 @@
 {% import "macros.html" as m %}
 
 {% block content %}
+<section class="panel">
+  <ol class="index">
+    {% for post in posts %}
+    <li>
+      <time datetime="{{ post.metadata.published }}">{{ post.metadata.published }}</time>
+      <a href="/posts/{{ post.stem|urlencode }}">{{ post.metadata.title }}</a>
+      <p>{{ post.metadata.description }}</p>
+    </li>
+    {% endfor %}
+  </ol>
+</section>
 <div class="panel">
   <img
     class="kids"
