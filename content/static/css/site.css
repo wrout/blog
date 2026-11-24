@@ -3,11 +3,11 @@
 
   --ink: light-dark(#1e2220, #e3dccb);
   --muted: light-dark(#6f7370, #8a8474);
-  --paper: light-dark(#e8e2d2, #18191c);
-  --panel: light-dark(#f3efe4, #222326);
-  --edge: light-dark(#1e2220, #0c0d0f);
+  --paper: light-dark(#e8e2d2, #14191a);
+  --panel: light-dark(#f3efe4, #232b27);
+  --edge: light-dark(#1e2220, #0c0f0e);
   --accent: light-dark(#b4503c, #d4735a);
-  --code: light-dark(#d5cebc, #16171a);
+  --code: light-dark(#d5cebc, #14191a);
   --grain: 0.2;
 
   font: 1rem/1.6 "Inconsolata", monospace;
