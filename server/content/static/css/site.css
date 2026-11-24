@@ -9,6 +9,7 @@
   --accent: light-dark(#b4503c, #d4735a);
   --code: light-dark(#d5cebc, #14191a);
   --grain: 0.2;
+  --rule: 3px solid var(--edge);
 
   font: 1rem/1.6 "Inconsolata", monospace;
   color: var(--ink);
@@ -46,11 +47,30 @@ a:is(:hover, :focus-visible) {
   outline: none;
 }
 
-body {
-  display: grid;
-  grid-template-columns: 18rem 1fr;
-  height: 100dvh;
-  overflow: hidden;
+.sidebar ul,
+.index,
+.meta {
+  list-style: none;
+}
+
+:is(.sidebar header, .masthead) p,
+.index time,
+.meta,
+.prose figcaption {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.dir,
+.index p {
+  color: var(--muted);
+}
+
+.kids,
+.juice {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 .sidebar::after,
@@ -66,16 +86,15 @@ body {
 
 .sidebar {
   position: relative;
-  display: flex;
+  display: none;
   flex-direction: column;
-  min-height: 0;
   overflow: hidden;
-  border-right: 3px solid var(--edge);
+  border-right: var(--rule);
   background: var(--panel);
 }
 
 .sidebar header {
-  padding: 1.5rem 1.25rem 1.5rem;
+  padding: 1.5rem 1.25rem;
 }
 
 .tree {
@@ -85,71 +104,40 @@ body {
   padding: 0 1.25rem 1.5rem;
 }
 
-.juice {
-  display: block;
-  flex: none;
-  width: 100%;
-  height: auto;
-  border-top: 3px solid var(--edge);
-}
-
-.sidebar p,
-.masthead p,
-.dir {
-  color: var(--muted);
-}
-
-.sidebar p,
-.masthead p {
-  font-size: 0.85rem;
-}
-
-.masthead {
-  display: none;
-}
-
-.sidebar ul {
-  list-style: none;
-}
-
-.sidebar ul ul {
+.tree ul ul {
   padding-left: 1.25rem;
 }
 
-.sidebar li {
+.tree li {
   padding-block: 0.15rem;
+}
+
+.tree [aria-current="page"] {
+  font-weight: 700;
+  scroll-initial-target: nearest;
+}
+
+.tree [aria-current="page"]::before {
+  content: "> " / "";
+  color: var(--accent);
+}
+
+.juice {
+  flex: none;
+  border-top: var(--rule);
 }
 
 .site {
   font-size: 1.4rem;
 }
 
-.sidebar [aria-current="page"] {
-  font-weight: 700;
-  scroll-initial-target: nearest;
-}
-
-.sidebar [aria-current="page"]::before {
-  content: "> " / "";
-  color: var(--accent);
-}
-
-.pane {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-}
-
-.scroll {
-  height: 100%;
-  overflow-x: hidden;
-  overflow-y: auto;
-}
-
 .page {
   position: relative;
   isolation: isolate;
-  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  min-height: 100dvh;
   padding: clamp(1rem, 4vw, 3rem);
 }
 
@@ -175,29 +163,10 @@ body {
   overflow: clip;
 }
 
-@container (min-width: 42rem) {
-  .tiles {
-    --cols: 6;
-  }
-}
-
-@container (min-width: 63rem) {
-  .tiles {
-    --cols: 9;
-  }
-}
-
-@container (min-width: 84rem) {
-  .tiles {
-    --cols: 12;
-  }
-}
-
-@container (min-width: 105rem) {
-  .tiles {
-    --cols: 15;
-  }
-}
+@container (min-width: 42rem) { .tiles { --cols: 6; } }
+@container (min-width: 63rem) { .tiles { --cols: 9; } }
+@container (min-width: 84rem) { .tiles { --cols: 12; } }
+@container (min-width: 105rem) { .tiles { --cols: 15; } }
 
 .tiles img {
   display: block;
@@ -208,25 +177,12 @@ body {
 }
 
 .panel {
+  width: 100%;
   max-width: 100ch;
   margin-inline: auto;
   padding: clamp(1.25rem, 4vw, 2.5rem);
-  border: 3px solid var(--edge);
+  border: var(--rule);
   background: var(--panel);
-}
-
-.kids {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-.panel:not(.masthead) + .panel {
-  margin-top: 2rem;
-}
-
-.index {
-  list-style: none;
 }
 
 .index li + li {
@@ -235,12 +191,6 @@ body {
 
 .index time {
   display: block;
-  color: var(--muted);
-  font-size: 0.85rem;
-}
-
-.index p {
-  color: var(--muted);
 }
 
 h1 {
@@ -254,9 +204,6 @@ h1 {
   flex-wrap: wrap;
   gap: 0.6rem;
   margin-top: 0.7rem;
-  list-style: none;
-  color: var(--muted);
-  font-size: 0.85rem;
 }
 
 .prose {
@@ -271,7 +218,7 @@ h1 {
 .prose > h1 {
   margin-bottom: 2rem;
   padding-bottom: 1rem;
-  border-bottom: 3px solid var(--edge);
+  border-bottom: var(--rule);
 }
 
 .prose :is(h2, h3, h4, h5, h6) {
@@ -283,41 +230,16 @@ h1 {
   color: var(--muted);
 }
 
-.prose h2 {
-  font-size: 1.9rem;
-}
+.prose h2 { font-size: 1.9rem; }
+.prose h3 { font-size: 1.5rem; }
+.prose h4 { font-size: 1.2rem; }
+.prose :is(h5, h6) { font-size: 1.05rem; }
 
-.prose h3 {
-  font-size: 1.5rem;
-}
-
-.prose h4 {
-  font-size: 1.2rem;
-}
-
-.prose :is(h5, h6) {
-  font-size: 1.05rem;
-}
-
-.prose h2::before {
-  content: "# " / "";
-}
-
-.prose h3::before {
-  content: "## " / "";
-}
-
-.prose h4::before {
-  content: "### " / "";
-}
-
-.prose h5::before {
-  content: "#### " / "";
-}
-
-.prose h6::before {
-  content: "##### " / "";
-}
+.prose h2::before { content: "# " / ""; }
+.prose h3::before { content: "## " / ""; }
+.prose h4::before { content: "### " / ""; }
+.prose h5::before { content: "#### " / ""; }
+.prose h6::before { content: "##### " / ""; }
 
 .prose :is(ul, ol) {
   padding-left: 1.4rem;
@@ -327,24 +249,25 @@ h1 {
   margin-top: 0.4rem;
 }
 
+.prose :where(pre, :not(pre) > code, blockquote, th, :target) {
+  background: var(--code);
+}
+
 .prose pre {
   padding: 1rem;
   overflow-x: auto;
-  background: var(--code);
   font-size: 0.88rem;
   line-height: 1.6;
 }
 
 .prose :not(pre) > code {
   padding: 0.1em 0.35em;
-  background: var(--code);
   font-size: 0.92em;
 }
 
 .prose blockquote {
   padding: 0.5rem 1rem;
   border-left: 5px solid var(--accent);
-  background: var(--code);
 }
 
 .prose table {
@@ -359,18 +282,12 @@ h1 {
   text-align: left;
 }
 
-.prose th {
-  background: var(--code);
-}
-
 .prose figure {
   text-align: center;
 }
 
 .prose figcaption {
   margin-top: 0.5rem;
-  color: var(--muted);
-  font-size: 0.85rem;
 }
 
 .prose :is(img, svg) {
@@ -424,7 +341,7 @@ h1 {
 .prose :is([role="doc-endnotes"], [role="doc-bibliography"]) {
   margin-top: 2.5rem;
   padding-top: 1rem;
-  border-top: 3px solid var(--edge);
+  border-top: var(--rule);
   font-size: 0.88rem;
 }
 
@@ -437,42 +354,41 @@ h1 {
   text-indent: -1.6rem;
 }
 
-.prose [role="doc-bibliography"] .light {
-  color: var(--muted);
-}
-
 .prose [role="doc-bibliography"] .indent {
   padding-left: 1.6rem;
 }
 
-.prose :target {
-  scroll-margin-top: 1.5rem;
-  background: var(--code);
+.prose [role="doc-bibliography"] .light {
+  color: var(--muted);
 }
 
-@media (max-width: 48rem) {
+.prose :target {
+  scroll-margin-top: 1.5rem;
+}
+
+@media (width > 48rem) {
   body {
-    display: block;
-    height: auto;
-    overflow: visible;
+    display: grid;
+    grid-template-columns: 18rem 1fr;
+    height: 100dvh;
+    overflow: hidden;
   }
 
   .sidebar {
-    display: none;
+    display: flex;
   }
 
   .masthead {
-    display: block;
-    margin-bottom: 2rem;
+    display: none;
   }
 
-  .pane,
+  .pane {
+    overflow: hidden;
+  }
+
   .scroll {
-    height: auto;
-    overflow: visible;
-  }
-
-  .page {
-    min-height: 100dvh;
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 }
