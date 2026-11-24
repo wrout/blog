@@ -56,7 +56,8 @@ pub const Static = struct {
 
 pub fn readStatic(gpa: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Static {
     var walker = try dir.walk(gpa);
-    defer walker.deinit(io);
+    // defer walker.deinit(io);
+    defer walker.deinit();
     var files: std.ArrayList(File) = .empty;
     errdefer {
         for (files.items) |file| {

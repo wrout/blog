@@ -2,7 +2,8 @@
     .name = .blog,
     .version = "0.1.0",
     .fingerprint = 0xc01551439ed74b5f,
-    .minimum_zig_version = "0.18.0-dev.1186+9dd2c8c88",
+    // .minimum_zig_version = "0.18.0-dev.1186+9dd2c8c88",
+    .minimum_zig_version = "0.17.1",
     .dependencies = .{
         .typst_x86_64 = .{
             .url = "https://github.com/typst/typst/releases/download/v0.15.1/typst-x86_64-unknown-linux-musl.tar.xz",
@@ -27,6 +28,10 @@
         .curryst = .{
             .url = "https://github.com/pauladam94/curryst/archive/refs/tags/v0.6.tar.gz",
             .hash = "N-V-__8AAIJMHQCKDtAFhOsyR8ZA1lHXVe_sOblZQJ5qqUtR",
+        },
+        .zio = .{
+            .url = "git+https://github.com/lalinsky/zio?ref=v0.20.1#c0a6b5877c9bbc71d2d2c0b3374ce7fa61a4ec12",
+            .hash = "zio-0.20.1-xHbVVI0wLwDgE2dXWDCWH0UfCQYEhnBYHs1Td12oAGeR",
         },
     },
     .paths = .{

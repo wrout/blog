@@ -49,6 +49,11 @@ pub fn build(b: *std.Build) void {
             .optimize = optimize,
         }),
     });
+    const zio = b.dependency("zio", .{
+        .target = b.graph.host,
+        .optimize = optimize,
+    });
+    serve.root_module.addImport("zio", zio.module("zio"));
     b.installArtifact(serve);
 
     const serve_run = b.addRunArtifact(serve);

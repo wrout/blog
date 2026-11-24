@@ -2,7 +2,8 @@ const std = @import("std");
 
 pub fn compressTree(gpa: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !void {
     var walker = try dir.walk(gpa);
-    defer walker.deinit(io);
+    // defer walker.deinit(io);
+    defer walker.deinit();
     while (try walker.next(io)) |entry| {
         if (entry.kind != .file or !compressible.has(std.fs.path.extension(entry.basename))) {
             continue;

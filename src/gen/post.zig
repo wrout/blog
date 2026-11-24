@@ -65,7 +65,8 @@ pub const Posts = struct {
 
 pub fn readPosts(gpa: std.mem.Allocator, io: std.Io, posts: std.Io.Dir, compiler: typst.Compiler) !Posts {
     var walker = try posts.walk(gpa);
-    defer walker.deinit(io);
+    // defer walker.deinit(io);
+    defer walker.deinit();
     var items: std.ArrayList(Post) = .empty;
     errdefer {
         for (items.items) |post| {
