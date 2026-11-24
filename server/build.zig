@@ -49,6 +49,9 @@ pub fn build(b: *std.Build) void {
             .optimize = optimize,
         }),
     });
+    const gen_install = b.addInstallArtifact(gen, .{});
+    const gen_step = b.step("gen", "build the site generator");
+    gen_step.dependOn(&gen_install.step);
 
     const gen_run = b.addRunArtifact(gen);
     gen_run.addFileArg(typst);
@@ -63,6 +66,8 @@ pub fn build(b: *std.Build) void {
         .install_subdir = "public",
     });
     b.getInstallStep().dependOn(&public_install.step);
+    const site_step = b.step("site", "generate the site");
+    site_step.dependOn(&public_install.step);
 
     const serve = b.addExecutable(.{
         .name = "serve",
@@ -77,7 +82,10 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     serve.root_module.addImport("zio", zio.module("zio"));
-    b.installArtifact(serve);
+    const serve_install = b.addInstallArtifact(serve, .{});
+    b.getInstallStep().dependOn(&serve_install.step);
+    const server_step = b.step("server", "build the server");
+    server_step.dependOn(&serve_install.step);
 
     const serve_run = b.addRunArtifact(serve);
     serve_run.addDirectoryArg(out.path(b, "public"));

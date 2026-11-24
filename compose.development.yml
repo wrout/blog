@@ -1,0 +1,37 @@
+services:
+  server-development:
+    container_name: blog-server
+    build:
+      context: server
+      dockerfile: Dockerfile
+      target: development
+    restart: unless-stopped
+    volumes:
+      - ./server/src:/app/src
+      - ./server/content:/app/content
+    networks:
+      - internal
+    profiles:
+      - development
+
+  reverse-proxy-development:
+    container_name: blog-reverse-proxy
+    build:
+      context: nginx
+      dockerfile: Dockerfile
+    depends_on:
+      - server-development
+    restart: unless-stopped
+    networks:
+      - internal
+      - external
+    ports:
+      - "80:80"
+    profiles:
+      - development
+
+networks:
+  internal:
+    driver: bridge
+  external:
+    driver: bridge
