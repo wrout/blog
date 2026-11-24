@@ -246,7 +246,9 @@ const Request = struct {
                 .extra_headers = headers.slice(),
             },
         });
-        _ = try body.writer.sendFileAll(&file_reader, .unlimited);
+        // zio sets SPLICE_F_MORE if it thinks bytes remain, so we pass explicit size...
+        // - unknown/unlimited size is corked in pipe until 200ms elapse
+        _ = try body.writer.sendFileAll(&file_reader, .limited64(asset.size));
         try body.end();
     }
 };
