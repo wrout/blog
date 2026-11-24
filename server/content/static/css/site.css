@@ -18,6 +18,10 @@
   scrollbar-width: thin;
 }
 
+@view-transition {
+  navigation: auto;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --grain: 0.12;
@@ -165,6 +169,7 @@ a:is(:hover, :focus-visible) {
   display: grid;
   grid-template-columns: repeat(var(--cols), 1fr);
   overflow: clip;
+  filter: blur(6px);
 }
 
 @container (min-width: 42rem) { .tiles { --cols: 6; } }
@@ -177,7 +182,6 @@ a:is(:hover, :focus-visible) {
   width: 100%;
   aspect-ratio: 1;
   object-fit: cover;
-  filter: blur(6px);
 }
 
 .panel {
