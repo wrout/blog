@@ -122,11 +122,13 @@ const Media = enum {
 };
 
 const Cache = enum {
+    none,
     revalidate,
     immutable,
 
     fn header(cache: Cache) []const u8 {
         return switch (cache) {
+            .none => "no-store",
             .revalidate => "no-cache",
             .immutable => "public, max-age=31536000, immutable",
         };
@@ -176,7 +178,7 @@ pub const Resolver = struct {
         const file_path = try resolver.locate(gpa, io, path) orelse return null;
         defer gpa.free(file_path);
         const media: Media = .of(file_path);
-        const cache: Cache = if (path.versioned and media != .html) .immutable else .revalidate;
+        const cache: Cache = if (media == .html) .none else if (path.versioned) .immutable else .revalidate;
         for (encoding.candidates()) |candidate| {
             const variant = try std.mem.concat(gpa, u8, &.{ file_path, candidate.extension() });
             defer gpa.free(variant);
