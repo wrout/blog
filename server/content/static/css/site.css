@@ -127,6 +127,10 @@ a:is(:hover, :focus-visible) {
   color: var(--accent);
 }
 
+.tree [aria-current="page"]:is(:hover, :focus-visible)::before {
+  color: var(--panel);
+}
+
 .sidebar picture {
   display: contents;
 }
