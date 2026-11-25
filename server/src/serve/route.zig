@@ -135,9 +135,37 @@ const Cache = enum {
     }
 };
 
+const Tag = struct {
+    buffer: [48]u8,
+    len: u8,
+
+    fn init(stat: std.Io.File.Stat) Tag {
+        var tag: Tag = .{ .buffer = undefined, .len = 0 };
+        const written = std.fmt.bufPrint(&tag.buffer, "\"{x}-{x}\"", .{ stat.size, stat.mtime.nanoseconds }) catch unreachable;
+        tag.len = @intCast(written.len);
+        return tag;
+    }
+
+    fn slice(tag: *const Tag) []const u8 {
+        return tag.buffer[0..tag.len];
+    }
+
+    fn matches(tag: *const Tag, condition: ?[]const u8) bool {
+        var candidates = std.mem.tokenizeAny(u8, condition orelse return false, ", ");
+        while (candidates.next()) |candidate| {
+            const value = std.mem.cutPrefix(u8, candidate, "W/") orelse candidate;
+            if (std.mem.eql(u8, value, "*") or std.mem.eql(u8, value, tag.slice())) {
+                return true;
+            }
+        }
+        return false;
+    }
+};
+
 const Asset = struct {
     file: std.Io.File,
     size: u64,
+    tag: Tag,
     status: std.http.Status,
     media: Media,
     encoding: Encoding,
@@ -149,6 +177,7 @@ const Asset = struct {
         return .{
             .file = file,
             .size = stat.size,
+            .tag = .init(stat),
             .status = status,
             .media = media,
             .encoding = encoding,
@@ -230,13 +259,27 @@ const Request = struct {
         return request.inner.respond("", .{ .status = status });
     }
 
+    fn header(request: *const Request, name: []const u8) ?[]const u8 {
+        var fields = request.inner.iterateHeaders();
+        while (fields.next()) |field| {
+            if (std.ascii.eqlIgnoreCase(field.name, name)) {
+                return field.value;
+            }
+        }
+        return null;
+    }
+
     fn send(request: *Request, io: std.Io, asset: *Asset) !void {
         var headers: Headers = .{};
         try headers.add("content-type", asset.media.contentType());
         try headers.add("cache-control", asset.cache.header());
         try headers.add("vary", "accept-encoding");
+        try headers.add("etag", asset.tag.slice());
         if (asset.encoding.contentEncoding()) |value| {
             try headers.add("content-encoding", value);
+        }
+        if (asset.status == .ok and asset.tag.matches(request.header("if-none-match"))) {
+            return request.inner.respond("", .{ .status = .not_modified, .extra_headers = headers.slice() });
         }
         var file_buffer: [8192]u8 = undefined;
         var file_reader = asset.file.reader(io, &file_buffer);
